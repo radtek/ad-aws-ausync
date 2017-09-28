@@ -3,6 +3,7 @@ package com.upsmart.ausync.core;
 import com.upsmart.ausync.common.Constant;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.process.slave.AcceptCmd;
+import com.upsmart.server.common.utils.GsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

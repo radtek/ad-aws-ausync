@@ -1,5 +1,9 @@
 package com.upsmart.ausync.common;
 
+import com.upsmart.server.common.uniquenumber.UniqueNumberGenerator;
+
+import java.util.Map;
+
 /**
  * Created by yuhang on 17-3-31.
  */
@@ -19,4 +23,11 @@ public final class Constant {
     public final static String SYMBOL_WILDCARD = "*";
 
     public final static String SYMBOL_ATAT = "@@";
+
+    public static <K, V> int getRandomIndex(Map<K, V> map){
+
+        int size = map.size();
+        long rd = Math.abs(UniqueNumberGenerator.getInstance(20170313).next());
+        return (int)(rd%size);
+    }
 }

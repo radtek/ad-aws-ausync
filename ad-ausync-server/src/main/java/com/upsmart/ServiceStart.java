@@ -5,6 +5,8 @@ import com.hang.netty.processor.DefaultProcessor;
 import com.hang.netty.model.ServerConfig;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.core.Environment;
+import com.upsmart.ausync.process.master.AuQueryProcessor;
+import com.upsmart.ausync.process.master.AuUpdateProcessor;
 import com.upsmart.server.configuration.ConfigurationManager;
 import org.apache.log4j.PropertyConfigurator;
 import sun.misc.Signal;
@@ -44,6 +46,8 @@ public class ServiceStart {
         }
 
         conf.addProcessor("/cjdttg", new DefaultProcessor());
+        conf.addProcessor("/audience/pushtrans", new AuUpdateProcessor());
+        conf.addProcessor("/audience/query", new AuQueryProcessor());
         conf.setHttpPort(ConfigurationHelper.HTTP_PORT);
 
         // 服务启动

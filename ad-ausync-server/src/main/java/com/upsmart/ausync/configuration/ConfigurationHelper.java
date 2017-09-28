@@ -50,19 +50,19 @@ public class ConfigurationHelper {
         return Integer.valueOf(value);
     }
 
-    public static final int SLAVE_AWS_BUCKET_NAME;
-    private static int getSlaveAWSBucketName()
+    public static final String SLAVE_AWS_BUCKET_NAME;
+    private static String getSlaveAWSBucketName()
     {
         String value = ConfigurationManager.getAppSetting("slaveAWSBucketName", "upsmart-portrait-audience-analysis");
         LOGGER.info(String.format("SLAVE_AWS_BUCKET_NAME:[%s]", value));
-        return Integer.valueOf(value);
+        return value;
     }
-    public static final int SLAVE_AWS_REGION;
-    private static int getSlaveAWSRegion()
+    public static final String SLAVE_AWS_REGION;
+    private static String getSlaveAWSRegion()
     {
         String value = ConfigurationManager.getAppSetting("slaveAWSRegion", "cn-north-1");
         LOGGER.info(String.format("SLAVE_AWS_REGION:[%s]", value));
-        return Integer.valueOf(value);
+        return value;
     }
 
     public static final HashMap <String, String> SLAVE_ADDRESSES;
