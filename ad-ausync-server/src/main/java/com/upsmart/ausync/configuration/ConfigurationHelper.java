@@ -21,6 +21,7 @@ public class ConfigurationHelper {
         SLAVE_LISTEN_PORT = getSlaveListenPort();
         SLAVE_AWS_BUCKET_NAME = getSlaveAWSBucketName();
         SLAVE_AWS_REGION = getSlaveAWSRegion();
+        SLAVE_HISTORY_LOG = getSlaveHistoryLog();
         SLAVE_ADDRESSES = getSlaveAddresses();
         SLAVE_REDIS = getSlaveRedis();
     }
@@ -62,6 +63,14 @@ public class ConfigurationHelper {
     {
         String value = ConfigurationManager.getAppSetting("slaveAWSRegion", "cn-north-1");
         LOGGER.info(String.format("SLAVE_AWS_REGION:[%s]", value));
+        return value;
+    }
+
+    public static final String SLAVE_HISTORY_LOG;
+    private static String getSlaveHistoryLog()
+    {
+        String value = ConfigurationManager.getAppSetting("slaveHistoryLog", "/tmp/");
+        LOGGER.info(String.format("SLAVE_HISTORY_LOG:[%s]", value));
         return value;
     }
 

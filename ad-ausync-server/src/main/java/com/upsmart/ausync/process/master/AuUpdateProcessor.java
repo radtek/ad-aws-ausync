@@ -7,6 +7,7 @@ import com.upsmart.ausync.common.Constant;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.model.AuUpdateRequest;
 import com.upsmart.ausync.model.AuUpdateResponse;
+import com.upsmart.ausync.model.TransData;
 import com.upsmart.ausync.model.enums.ActionType;
 import com.upsmart.ausync.model.enums.TransCmd;
 import com.upsmart.server.common.utils.DateUtil;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -38,42 +40,52 @@ public class AuUpdateProcessor implements HttpProcessor {
     @Override
     public boolean process(HttpRequestWrapper request, HttpResponseWrapper response) {
 
-        AuUpdateRequest auUpdateRequest;
-        try{
-            byte[] data = request.getBuff();
-            if(null == data){
-                return returnData(response, "600", "no body data in request", null);
+        AuUpdateRequest auUpdateRequest = new AuUpdateRequest();
+        byte[] data = request.getBuff();
+        if(null == data){
+            return returnData(response, "600", "no body data in request", null);
+        }
+        else{
+            try {
+                String jsonStr = new String(data);
+                auUpdateRequest = (AuUpdateRequest)auUpdateRequest.deserialize(jsonStr);
+            }
+            catch (Exception ex){
+                LOGGER.error("", ex);
+                return returnData(response, "600", "deserialize error", null);
+            }
+
+            if(null == auUpdateRequest){
+                return returnData(response, "600", "fail to parse body data in request", null);
             }
             else{
-                String jsonStr = new String(data);
-                auUpdateRequest = AuUpdateRequest.deserialize(jsonStr);
-
-                if(null == auUpdateRequest){
-                    return returnData(response, "600", "fail to parse body data in request", null);
+                if(null == auUpdateRequest.action || !ActionType.UPDATE.getValue().equals(auUpdateRequest.action)){
+                    return returnData(response, "600", "action is not update", null);
                 }
-                else{
-                    if(null == auUpdateRequest.action || !ActionType.UPDATE.getValue().equals(auUpdateRequest.action)){
-                        return returnData(response, "600", "action is not update", null);
-                    }
 
-                    if(StringUtil.isNullOrEmpty(auUpdateRequest.audienceId)){
-                        return returnData(response, "600", "audienceId is empty", null);
-                    }
+                if(StringUtil.isNullOrEmpty(auUpdateRequest.audienceId)){
+                    return returnData(response, "600", "audienceId is empty", null);
+                }
 
-                    if(StringUtil.isNullOrEmpty(auUpdateRequest.taskId)){
-                        return returnData(response, "600", "taskId is empty", null);
-                    }
+                if(StringUtil.isNullOrEmpty(auUpdateRequest.taskId)){
+                    return returnData(response, "600", "taskId is empty", null);
                 }
             }
         }
-        catch (Exception ex){
-            LOGGER.error("", ex);
-            return returnData(response, "600", "exception", null);
-        }
+        LOGGER.info("update >>> " + auUpdateRequest.serializeJson());
 
-        auUpdateRequest.date = DateUtil.format(new Date(), "yyyyMMddHHmmss");
-        LOGGER.info(">>> " + auUpdateRequest.serializeJsonToStr());
-//        trans(auUpdateRequest);
+        TransData transData = new TransData();
+        transData.tasks = new ArrayList<>();
+        TransData.Task task = transData.new Task();
+        task.action = ActionType.UPDATE.getValue();
+        task.taskId = auUpdateRequest.taskId;
+        task.audienceIds = new ArrayList<>();
+        task.audienceIds.add(auUpdateRequest.audienceId);
+        transData.tasks.add(task);
+
+        if(!trans(transData)){
+            return returnData(response, "600", "fail to transfer data to remote service", null);
+        }
 
         return returnData(response, "200", null, auUpdateRequest.taskId);
     }
@@ -85,20 +97,20 @@ public class AuUpdateProcessor implements HttpProcessor {
         auUpdateResponse.errMsg = errMsg;
         auUpdateResponse.taskId = taskId;
 
-        String resp = auUpdateResponse.serializeJsonToStr();
+        String resp = auUpdateResponse.serializeJson();
 
         response.setStringData(resp);
         response.setStatus(HttpResponseStatus.OK);
         return false;
     }
 
-    private boolean trans(AuUpdateRequest transData){
+    private boolean trans(TransData transData){
         if(null == transData){
             return false;
         }
 
         BinaryData bd = new BinaryData();
-        bd.setData(transData.serializeJsonToByte());
+        bd.setData(transData.serializeJsonToGzip());
 
         ClientInfo ci = new ClientInfo();
         ci.setTime(DateUtil.format(new Date(), Constant.DATE_FORMAT_TOTAL));

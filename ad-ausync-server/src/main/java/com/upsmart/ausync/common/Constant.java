@@ -24,6 +24,8 @@ public final class Constant {
 
     public final static String SYMBOL_ATAT = "@@";
 
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
+
     public static <K, V> int getRandomIndex(Map<K, V> map){
 
         int size = map.size();

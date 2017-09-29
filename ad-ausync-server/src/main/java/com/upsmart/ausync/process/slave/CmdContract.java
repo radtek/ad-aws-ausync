@@ -1,6 +1,8 @@
 package com.upsmart.ausync.process.slave;
 
 import com.upsmart.ausync.common.Constant;
+import com.upsmart.ausync.core.Environment;
+import com.upsmart.ausync.model.TransData;
 import com.upsmart.ausync.model.enums.TransCmd;
 import com.upsmart.server.common.utils.DateUtil;
 import com.upsmart.server.common.utils.StringUtil;
@@ -12,6 +14,7 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Date;
 
 /**
@@ -35,10 +38,26 @@ public class CmdContract implements Contract {
             case AUDIENCE_UPDATE: // 更新max
                 LOGGER.info(String.format(">>> Begin to audience update."));
 
-
-
-
+                byte[] data = getData(trans);
+                TransData task = new TransData();
+                task = (TransData)task.deserializeFromGzip(data);
+                try {
+                    Environment.getWorkQueue().add(task);
+                } catch (IOException e) {
+                    LOGGER.info("", e);
+                }
                 LOGGER.info(String.format("<<< End to audience update."));
+                break;
+
+            case AUDIENCE_QUERY:
+                LOGGER.info(String.format(">>> Begin to audience query."));
+
+
+
+
+
+
+                LOGGER.info(String.format("<<< End to audience query."));
                 break;
 
             case UNKNOWN:
