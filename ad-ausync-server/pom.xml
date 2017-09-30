@@ -74,6 +74,12 @@
             <version>1.11.99</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.upsmart</groupId>
+            <artifactId>ad-server-audience</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <build>

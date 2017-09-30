@@ -21,6 +21,7 @@ public class ConfigurationHelper {
         SLAVE_LISTEN_PORT = getSlaveListenPort();
         SLAVE_AWS_BUCKET_NAME = getSlaveAWSBucketName();
         SLAVE_AWS_REGION = getSlaveAWSRegion();
+        SLAVE_AWS_AUDIENCE_PATH = getSlaveAwsAudiencePath();
         SLAVE_HISTORY_LOG = getSlaveHistoryLog();
         SLAVE_ADDRESSES = getSlaveAddresses();
         SLAVE_REDIS = getSlaveRedis();
@@ -65,12 +66,18 @@ public class ConfigurationHelper {
         LOGGER.info(String.format("SLAVE_AWS_REGION:[%s]", value));
         return value;
     }
-
     public static final String SLAVE_HISTORY_LOG;
     private static String getSlaveHistoryLog()
     {
         String value = ConfigurationManager.getAppSetting("slaveHistoryLog", "/tmp/");
         LOGGER.info(String.format("SLAVE_HISTORY_LOG:[%s]", value));
+        return value;
+    }
+    public static final String SLAVE_AWS_AUDIENCE_PATH;
+    private static String getSlaveAwsAudiencePath()
+    {
+        String value = ConfigurationManager.getAppSetting("slaveAWSAudiencePath", "upsmart-prod-audience-data/data/");
+        LOGGER.info(String.format("SLAVE_AWS_AUDIENCE_PATH:[%s]", value));
         return value;
     }
 

@@ -136,7 +136,7 @@ public class AuQueryProcessor implements HttpProcessor {
                 // 传输
                 RecvData recvData;
                 try{
-                    recvData = proxy.query(TransCmd.AUDIENCE_UPDATE.getValue(), ti);
+                    recvData = proxy.query(TransCmd.AUDIENCE_QUERY.getValue(), ti);
                 }
                 catch (Exception ex){
                     LOGGER.error("", ex);

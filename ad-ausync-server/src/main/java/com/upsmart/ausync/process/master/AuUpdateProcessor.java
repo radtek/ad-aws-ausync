@@ -59,8 +59,8 @@ public class AuUpdateProcessor implements HttpProcessor {
                 return returnData(response, "600", "fail to parse body data in request", null);
             }
             else{
-                if(null == auUpdateRequest.action || !ActionType.UPDATE.getValue().equals(auUpdateRequest.action)){
-                    return returnData(response, "600", "action is not update", null);
+                if(StringUtil.isNullOrEmpty(auUpdateRequest.action)){
+                    return returnData(response, "600", "action is empty", null);
                 }
 
                 if(StringUtil.isNullOrEmpty(auUpdateRequest.audienceId)){
@@ -77,7 +77,7 @@ public class AuUpdateProcessor implements HttpProcessor {
         TransData transData = new TransData();
         transData.tasks = new ArrayList<>();
         TransData.Task task = transData.new Task();
-        task.action = ActionType.UPDATE.getValue();
+        task.action = auUpdateRequest.action;
         task.taskId = auUpdateRequest.taskId;
         task.audienceIds = new ArrayList<>();
         task.audienceIds.add(auUpdateRequest.audienceId);

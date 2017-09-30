@@ -43,22 +43,24 @@ public class CmdContract implements Contract {
                 task = (TransData)task.deserializeFromGzip(data);
                 try {
                     Environment.getWorkQueue().add(task);
+                    return response(1);
                 } catch (IOException e) {
                     LOGGER.info("", e);
                 }
-                LOGGER.info(String.format("<<< End to audience update."));
+                finally {
+                    LOGGER.info(String.format("<<< End to audience update."));
+                }
                 break;
 
             case AUDIENCE_QUERY:
                 LOGGER.info(String.format(">>> Begin to audience query."));
 
-
-
-
-
-
+                data = getData(trans);
+                task = new TransData();
+                task = (TransData)task.deserializeFromGzip(data);
+                TransData transData =  Environment.getWorkQueue().getStatus(task);
                 LOGGER.info(String.format("<<< End to audience query."));
-                break;
+                return response(1, transData.serializeJsonToGzip());
 
             case UNKNOWN:
                 LOGGER.warn(String.format(">>> Unknown command.<<<"));

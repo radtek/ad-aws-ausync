@@ -6,7 +6,8 @@ package com.upsmart.ausync.model.enums;
 public enum ActionType {
     UNKNOWN("unknown"),
 
-    UPDATE("update");
+    UPDATE("update"),
+    DELETE("delete");
 
     private String value;
     ActionType(String value){
