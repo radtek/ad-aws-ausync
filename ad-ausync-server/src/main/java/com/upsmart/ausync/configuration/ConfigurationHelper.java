@@ -23,6 +23,7 @@ public class ConfigurationHelper {
         SLAVE_AWS_REGION = getSlaveAWSRegion();
         SLAVE_AWS_AUDIENCE_PATH = getSlaveAwsAudiencePath();
         SLAVE_HISTORY_LOG = getSlaveHistoryLog();
+        SLAVE_LOCAL_AUDIENCE_PATH = getSlaveLocalAudiencePath();
         SLAVE_ADDRESSES = getSlaveAddresses();
         SLAVE_REDIS = getSlaveRedis();
     }
@@ -80,6 +81,15 @@ public class ConfigurationHelper {
         LOGGER.info(String.format("SLAVE_AWS_AUDIENCE_PATH:[%s]", value));
         return value;
     }
+    public static final String SLAVE_LOCAL_AUDIENCE_PATH;
+    private static String getSlaveLocalAudiencePath()
+    {
+        String value = ConfigurationManager.getAppSetting("slaveLocalAudiencePath", "/home/upsmart/works/");
+        LOGGER.info(String.format("SLAVE_LOCAL_AUDIENCE_PATH:[%s]", value));
+        return value;
+    }
+
+
 
     public static final HashMap <String, String> SLAVE_ADDRESSES;
     private static HashMap<String, String> getSlaveAddresses()

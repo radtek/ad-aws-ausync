@@ -13,7 +13,8 @@ public class TransData extends SerializeBase{
         public String taskId;
         public String action;
         public List<String> audienceIds;
-        public String taskCode;
-        public String taskMsg;
+        public String taskCode = "0";
+        public String taskMsg = "";
+        public int retryNum = 10; // 重试次数
     }
 }

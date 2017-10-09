@@ -4,6 +4,7 @@ import com.upsmart.ausync.common.Constant;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.model.WorkQueue;
 import com.upsmart.ausync.process.slave.AcceptCmd;
+import com.upsmart.ausync.process.slave.AudienceFileProcessor;
 import com.upsmart.server.common.utils.GsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,13 +29,12 @@ public final class Environment {
 
 
 
-
-
             }
             else if(ConfigurationHelper.WORK_MODEL.equals(Constant.WORK_MODEL_SLAVE)){
                 LOGGER.info("Work in slave model!");
                 workQueue = new WorkQueue();
                 AcceptCmd.getInstance().start();
+                AudienceFileProcessor.getInstance().start();
             }
             else{
                 LOGGER.error("Who am I? Please set work model!");
@@ -56,12 +56,11 @@ public final class Environment {
         if(ConfigurationHelper.WORK_MODEL.equals("master")){
 
 
-
         }
         else if(ConfigurationHelper.WORK_MODEL.equals("slave")){
 
+            AudienceFileProcessor.getInstance().stop();
             AcceptCmd.getInstance().stop();
-
         }
 
         LOGGER.info("Environment disposed.");

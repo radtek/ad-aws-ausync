@@ -25,7 +25,6 @@ public class AwsS3Wrapper {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AwsS3Wrapper.class);
 
     private AmazonS3 s3;
-    private TransferManager tx;
 
     public AwsS3Wrapper(){
         AWSCredentialsProvider credentials = new ProfileCredentialsProvider("default");
@@ -33,8 +32,6 @@ public class AwsS3Wrapper {
         awsS3Builder.setRegion(ConfigurationHelper.SLAVE_AWS_REGION);
         awsS3Builder.setCredentials(credentials);
         s3 = awsS3Builder.build();
-
-
     }
 
     public List<AwsS3FileInfo> getAllFilesPath() {
@@ -75,7 +72,8 @@ public class AwsS3Wrapper {
     public void downloadFile(String filePath, File file) {
         TransferManagerBuilder transferManagerBuilder = TransferManagerBuilder.standard();
         transferManagerBuilder.setS3Client(s3);
-        tx = transferManagerBuilder.build();
+
+        TransferManager tx = transferManagerBuilder.build();
         Download download = tx.download(ConfigurationHelper.SLAVE_AWS_BUCKET_NAME, filePath, file);
         while(true){
             try {
@@ -93,7 +91,7 @@ public class AwsS3Wrapper {
             }
         }
         if(null != tx){
-            tx.shutdownNow();
+            tx.shutdownNow(false);
         }
     }
 
