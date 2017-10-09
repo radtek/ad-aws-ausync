@@ -68,6 +68,10 @@ public class WorkQueue {
         return workQueue.poll();
     }
 
+    public int getCount(){
+        return workQueue.size();
+    }
+
     public void updateStatus(TransData.Task task) throws IOException {
         TransData.Task t = statusMap.get(task.taskId);
         if(null != t){
