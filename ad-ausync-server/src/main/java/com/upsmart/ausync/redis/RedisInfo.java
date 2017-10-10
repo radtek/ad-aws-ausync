@@ -73,7 +73,6 @@ public enum RedisInfo {
         GenericObjectPoolConfig conf = new GenericObjectPoolConfig();
         conf.setMaxTotal(getMaxActive());
         conf.setMaxIdle(getMaxIdle());
-        conf.setTestOnBorrow(true);
         return conf;
     }
 

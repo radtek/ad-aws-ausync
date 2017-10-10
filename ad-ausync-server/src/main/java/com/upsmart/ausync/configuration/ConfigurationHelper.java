@@ -24,6 +24,8 @@ public class ConfigurationHelper {
         SLAVE_AWS_AUDIENCE_PATH = getSlaveAwsAudiencePath();
         SLAVE_HISTORY_LOG = getSlaveHistoryLog();
         SLAVE_LOCAL_AUDIENCE_PATH = getSlaveLocalAudiencePath();
+        SLAVE_QUEUE_BLOCK_SIZE = getSlaveQueueBlockSize();
+        SLAVE_QUEUE_THREAD_COUNT = getSlaveQueueThreadCount();
         SLAVE_ADDRESSES = getSlaveAddresses();
         SLAVE_REDIS = getSlaveRedis();
     }
@@ -88,8 +90,20 @@ public class ConfigurationHelper {
         LOGGER.info(String.format("SLAVE_LOCAL_AUDIENCE_PATH:[%s]", value));
         return value;
     }
-
-
+    public static final int SLAVE_QUEUE_BLOCK_SIZE;
+    private static int getSlaveQueueBlockSize()
+    {
+        String value = ConfigurationManager.getAppSetting("slaveQueueBlockSize", "10000");
+        LOGGER.info(String.format("SLAVE_QUEUE_BLOCK_SIZE:[%s]", value));
+        return Integer.valueOf(value);
+    }
+    public static final int SLAVE_QUEUE_THREAD_COUNT;
+    private static int getSlaveQueueThreadCount()
+    {
+        String value = ConfigurationManager.getAppSetting("slaveQueueThreadCount", "3");
+        LOGGER.info(String.format("SLAVE_QUEUE_THREAD_COUNT:[%s]", value));
+        return Integer.valueOf(value);
+    }
 
     public static final HashMap <String, String> SLAVE_ADDRESSES;
     private static HashMap<String, String> getSlaveAddresses()

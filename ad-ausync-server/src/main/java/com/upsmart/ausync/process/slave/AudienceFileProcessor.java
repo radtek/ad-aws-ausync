@@ -1,8 +1,5 @@
 package com.upsmart.ausync.process.slave;
 
-import com.upsmart.audienceproto.model.Audience;
-import com.upsmart.audienceproto.proto.AudienceProto;
-import com.upsmart.audienceproto.serializer.AudienceSerializer;
 import com.upsmart.ausync.awss3.AwsS3FileInfo;
 import com.upsmart.ausync.awss3.AwsS3Wrapper;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
@@ -10,6 +7,7 @@ import com.upsmart.ausync.core.Environment;
 import com.upsmart.ausync.model.BrotherFiles;
 import com.upsmart.ausync.model.TransData;
 import com.upsmart.ausync.model.enums.ActionType;
+import com.upsmart.ausync.redis.AudienceWrapper;
 import com.upsmart.server.common.codec.MD5;
 import com.upsmart.server.common.utils.StringUtil;
 import org.slf4j.Logger;
@@ -19,10 +17,7 @@ import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -127,7 +122,7 @@ public class AudienceFileProcessor {
             ActionType at = ActionType.convert(task.action);
             switch (at) {
                 case UPDATE:
-                    return updateFile(task, localFiles);
+                    return update(task, localFiles);
                 case DELETE:
 
                     break;
@@ -135,7 +130,7 @@ public class AudienceFileProcessor {
             return false;
         }
 
-        private boolean updateFile(TransData.Task task, Map<String, BrotherFiles> map) throws Exception {
+        private boolean update(TransData.Task task, Map<String, BrotherFiles> map) throws Exception {
             Iterator<Map.Entry<String, BrotherFiles>> iter = map.entrySet().iterator();
             while (iter.hasNext()) {
                 Map.Entry<String, BrotherFiles> entry = iter.next();
@@ -146,8 +141,9 @@ public class AudienceFileProcessor {
                 }
                 String localFilePath = brotherFiles.gzipFilePath.substring(0, brotherFiles.gzipFilePath.lastIndexOf("."));
 
+                // 解压
                 gzipDecompress(brotherFiles.gzipFilePath, localFilePath);
-
+                // 读写redis
                 setRedis(localFilePath);
             }
 
@@ -212,22 +208,35 @@ public class AudienceFileProcessor {
             }
         }
 
-        private void setRedis(String localFilePath) throws IOException {
+        private void setRedis(String localFilePath) throws IOException, InterruptedException {
             File file = new File(localFilePath);
             if (!file.isDirectory()) {
                 LOGGER.info(String.format("set redis from (%s)", localFilePath));
 
+                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT);
                 InputStreamReader inputStreamReader = null;
                 BufferedReader bufferedReader = null;
                 try {
                     inputStreamReader = new InputStreamReader(new FileInputStream(file.getAbsolutePath()), "UTF-8");
                     bufferedReader = new BufferedReader(inputStreamReader);
                     String line;
+                    List<String> deviceIds = null;
                     while ((line = bufferedReader.readLine()) != null) {
-                        // TODO
+                        if(null == deviceIds){
+                            deviceIds = new ArrayList<>();
+                        }
+                        deviceIds.add(line);
 
-
+                        if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
+                            audienceWrapper.offer(deviceIds);
+                            deviceIds = null;
+                        }
                     }
+                    if(null != deviceIds && !deviceIds.isEmpty()) {
+                        audienceWrapper.offer(deviceIds);
+                    }
+                    audienceWrapper.isWaiting();
+
                 } finally {
                     if (null != bufferedReader) {
                         bufferedReader.close();
