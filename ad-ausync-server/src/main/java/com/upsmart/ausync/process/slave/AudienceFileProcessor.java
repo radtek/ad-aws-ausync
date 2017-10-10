@@ -120,17 +120,10 @@ public class AudienceFileProcessor {
             }
 
             ActionType at = ActionType.convert(task.action);
-            switch (at) {
-                case UPDATE:
-                    return update(task, localFiles);
-                case DELETE:
-
-                    break;
-            }
-            return false;
+            return update(task, localFiles, at);
         }
 
-        private boolean update(TransData.Task task, Map<String, BrotherFiles> map) throws Exception {
+        private boolean update(TransData.Task task, Map<String, BrotherFiles> map, ActionType at) throws Exception {
             Iterator<Map.Entry<String, BrotherFiles>> iter = map.entrySet().iterator();
             while (iter.hasNext()) {
                 Map.Entry<String, BrotherFiles> entry = iter.next();
@@ -144,31 +137,10 @@ public class AudienceFileProcessor {
                 // 解压
                 gzipDecompress(brotherFiles.gzipFilePath, localFilePath);
                 // 读写redis
-                setRedis(localFilePath);
+                setRedis(localFilePath, task.audienceIds, at);
             }
 
             return true;
-        }
-
-        private void gzipDecompress(String localFilePath) throws IOException {
-            String cmd = String.format("gzip -dfk %s", localFilePath);
-            BufferedReader input = null;
-            try {
-                Process process = Runtime.getRuntime().exec(cmd);
-                if (null != process) {
-                    input = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    if (null != input) {
-
-                    }
-                }
-            } finally {
-                if (null != input) {
-                    try {
-                        input.close();
-                    } catch (IOException e) {
-                    }
-                }
-            }
         }
 
         private void gzipDecompress(String oldFile, String newFile) throws Exception {
@@ -208,12 +180,13 @@ public class AudienceFileProcessor {
             }
         }
 
-        private void setRedis(String localFilePath) throws IOException, InterruptedException {
+        private void setRedis(String localFilePath, List<String> audienceIds, ActionType at) throws IOException, InterruptedException {
             File file = new File(localFilePath);
             if (!file.isDirectory()) {
                 LOGGER.info(String.format("set redis from (%s)", localFilePath));
 
-                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT);
+                AudienceWrapper audienceWrapper = new AudienceWrapper(
+                        ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
                 InputStreamReader inputStreamReader = null;
                 BufferedReader bufferedReader = null;
                 try {
