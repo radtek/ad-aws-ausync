@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -186,61 +187,107 @@ public class AudienceFileProcessor {
             if (!file.isDirectory()) {
                 LOGGER.info(String.format("set redis from (%s)", localFilePath));
 
-                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
+//                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
 
                 FileInputStream in = null;
                 FileChannel channel = null;
+                List<MappedByteBuffer> listBuff = new ArrayList<>();
                 try {
 
                     in = new FileInputStream(file);
                     channel = in.getChannel();
-                    MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
 
                     List<String> deviceIds = null;
                     boolean isNewLine = true;
                     int index = 0;
                     byte[] buff = null;
-                    long bufferLength = byteBuffer.limit();
-                    long pro = bufferLength/100; // 进度块
+                    long fileLength = file.length();
+                    long pro = fileLength/100; // 进度块
                     int proNum = 1;
-                    for(int i=0; i<bufferLength; i++){
-                        if(isNewLine){
-                            buff = new byte[1024];
-                            index=0;
-                            isNewLine = false;
-                        }
-                        byte b = byteBuffer.get();
-                        if(b == '\n'){
-                            String line = new String(Arrays.copyOf(buff, index));
-                            if(null == deviceIds){
-                                deviceIds = new ArrayList<>();
-                            }
-                            deviceIds.add(line);
-                            if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
-                                audienceWrapper.offer(deviceIds);
-                                deviceIds = null;
-                            }
-                            isNewLine = true;
-                        }
-                        else{
-                            buff[index++] = b;
-                        }
 
-                        if(i >= (pro * proNum)){
-                            long percent = i * 100;
-                            percent = percent/bufferLength;
-                            LOGGER.info(String.format("process: %d%%", percent));
-                            proNum++;
+                    // 文件块数量，可能还有结余
+                    long blockNum = file.length() / Constant.MAX_MAPPING_BUFF_SIZE;
+                    for(int m=0; m<blockNum; m++){
+                        MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, m*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);
+                        listBuff.add(byteBuffer);
+
+                        long bufferLength = byteBuffer.limit();
+                        for(long i=0; i<bufferLength; i++){
+                            if(isNewLine){
+                                buff = new byte[1024];
+                                index=0;
+                                isNewLine = false;
+                            }
+                            byte b = byteBuffer.get();
+                            if(b == '\n'){
+                                String line = new String(Arrays.copyOf(buff, index));
+                                if(null == deviceIds){
+                                    deviceIds = new ArrayList<>();
+                                }
+                                deviceIds.add(line);
+                                if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
+//                                    audienceWrapper.offer(deviceIds);
+                                    deviceIds = null;
+                                }
+                                isNewLine = true;
+                            }
+                            else{
+                                buff[index++] = b;
+                            }
+
+                            if(i >= (pro * proNum)){
+                                LOGGER.info(String.format("processA: %d%%", i * 100/fileLength));
+                                proNum++;
+                            }
                         }
                     }
-                    Constant.releaseBuff(byteBuffer); // 释放内存
+                    long remainByte = file.length() - (blockNum * Constant.MAX_MAPPING_BUFF_SIZE);
+                    if(remainByte > 0){
+                        MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, (blockNum)*Constant.MAX_MAPPING_BUFF_SIZE, remainByte);
+                        listBuff.add(byteBuffer);
+
+                        long bufferLength = byteBuffer.limit();
+                        for(long i=0; i<bufferLength; i++){
+                            if(isNewLine){
+                                buff = new byte[1024];
+                                index=0;
+                                isNewLine = false;
+                            }
+                            byte b = byteBuffer.get();
+                            if(b == '\n'){
+                                String line = new String(Arrays.copyOf(buff, index));
+                                if(null == deviceIds){
+                                    deviceIds = new ArrayList<>();
+                                }
+                                deviceIds.add(line);
+                                if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
+//                                    audienceWrapper.offer(deviceIds);
+                                    deviceIds = null;
+                                }
+                                isNewLine = true;
+                            }
+                            else{
+                                buff[index++] = b;
+                            }
+
+                            if((blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
+                                LOGGER.info(String.format("processB: %d%%", (blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
+                                proNum++;
+                            }
+                        }
+                    }
 
                     if(null != deviceIds && !deviceIds.isEmpty()) {
-                        audienceWrapper.offer(deviceIds);
+//                        audienceWrapper.offer(deviceIds);
                     }
                     LOGGER.info("process: 100%");
-                    audienceWrapper.isWaiting();
+//                    audienceWrapper.isWaiting();
                 } finally {
+                    if(null != listBuff && !listBuff.isEmpty()){
+                        for(MappedByteBuffer buff : listBuff){
+                            Constant.releaseBuff(buff); // 释放内存
+                        }
+                    }
                     if(null != channel){
                         channel.close();
                     }
@@ -317,14 +364,33 @@ public class AudienceFileProcessor {
             if (!file.isDirectory()) {
                 FileInputStream in = null;
                 FileChannel channel = null;
+                List<MappedByteBuffer> listBuff = new ArrayList<>();
                 try {
+                    MessageDigest md = MessageDigest.getInstance("MD5");
                     in = new FileInputStream(file);
                     channel = in.getChannel();
-                    MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-                    String ret = MD5.encrypt(byteBuffer);
-                    Constant.releaseBuff(byteBuffer); // 释放内存
-                    return ret;
+
+                    // 文件块数量，可能还有结余
+                    long blockNum = file.length() / Constant.MAX_MAPPING_BUFF_SIZE;
+                    for(int i=0; i<blockNum; i++){
+                        MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, i*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);
+                        md.update(byteBuffer);
+                        listBuff.add(byteBuffer);
+                    }
+                    long remainByte = file.length() - (blockNum * Constant.MAX_MAPPING_BUFF_SIZE);
+                    if(remainByte > 0){
+                        MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, (blockNum)*Constant.MAX_MAPPING_BUFF_SIZE, remainByte);
+                        md.update(byteBuffer);
+                        listBuff.add(byteBuffer);
+                    }
+
+                    return MD5.byteToString(md.digest());
                 } finally {
+                    if(null != listBuff && !listBuff.isEmpty()){
+                        for(MappedByteBuffer buff : listBuff){
+                            Constant.releaseBuff(buff); // 释放内存
+                        }
+                    }
                     if(null != channel){
                         channel.close();
                     }
