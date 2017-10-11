@@ -91,6 +91,7 @@ public class AudienceWrapper {
     private class Worker implements Runnable{
 
         private long count = 0;
+        private long newCount = 0;
 
         @Override
         public void run() {
@@ -122,6 +123,7 @@ public class AudienceWrapper {
                                 au = new Audience();
                                 au.version = 1;
                                 au.lastViewTime = DateUtil.dateToLong(new Date());
+                                newCount++;
                             }
 
                             if(null == au.tags && ActionType.UPDATE.equals(actionType)){
@@ -152,7 +154,7 @@ public class AudienceWrapper {
 
                 }
             }
-            LOGGER.debug(String.format("write (%d)", count));
+            LOGGER.debug(String.format("write (%d), and (%d) new count in it.", count, newCount));
             countDownLatch.countDown();
         }
     }
