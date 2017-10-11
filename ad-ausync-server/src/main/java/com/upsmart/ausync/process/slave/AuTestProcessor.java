@@ -1,5 +1,6 @@
 package com.upsmart.ausync.process.slave;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hang.netty.httpwrapper.HttpRequestWrapper;
 import com.hang.netty.httpwrapper.HttpResponseWrapper;
 import com.hang.netty.processor.HttpProcessor;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 /**
  * Created by yuhang on 17-10-10.
@@ -27,25 +29,46 @@ public class AuTestProcessor implements HttpProcessor {
         String resp = "";
 
         String deviceId = request.getParam("id");
-        RedisConnectionPool redisCluster = null;
-        try{
-            if(!StringUtil.isNullOrEmpty(deviceId)){
-                redisCluster = new RedisConnectionPool(RedisInfo.AUDIENCE);
+        String work = request.getParam("work"); // 工作内容
+        work = (null == work ? "" : work);
 
-                byte[] key = deviceId.getBytes("UTF-8");
-                byte[] data = redisCluster.get(key);
-                if(null != data && data.length > 0) {
-                    Audience au = AudienceSerializer.parseFrom(data);
-                    resp = au.toString();
-                }
-                else{
-                    resp = "no data";
-                }
+
+        try{
+            switch (work){
+                case "set":
+
+                    break;
+                case "show":
+                default:
+                    resp = show(deviceId);
+                    break;
             }
         }
         catch (Exception ex){
             LOGGER.error("", ex);
             resp = ex.getCause().toString();
+        }
+        finally {
+
+        }
+        response.setStringData(resp);
+        response.setStatus(HttpResponseStatus.OK);
+        return true;
+    }
+
+    private String show(String deviceId) throws InvalidProtocolBufferException, UnsupportedEncodingException {
+        RedisConnectionPool redisCluster = null;
+        try {
+            if (!StringUtil.isNullOrEmpty(deviceId)) {
+                redisCluster = new RedisConnectionPool(RedisInfo.AUDIENCE);
+
+                byte[] key = deviceId.getBytes("UTF-8");
+                byte[] data = redisCluster.get(key);
+                if (null != data && data.length > 0) {
+                    Audience au = AudienceSerializer.parseFrom(data);
+                    return au.toString();
+                }
+            }
         }
         finally {
             if(null != redisCluster){
@@ -55,8 +78,6 @@ public class AuTestProcessor implements HttpProcessor {
                 }
             }
         }
-        response.setStringData(resp);
-        response.setStatus(HttpResponseStatus.OK);
-        return true;
+        return "no data";
     }
 }

@@ -2,6 +2,7 @@ package com.upsmart.ausync.process.slave;
 
 import com.upsmart.ausync.awss3.AwsS3FileInfo;
 import com.upsmart.ausync.awss3.AwsS3Wrapper;
+import com.upsmart.ausync.common.Constant;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.core.Environment;
 import com.upsmart.ausync.model.BrotherFiles;
@@ -105,7 +106,7 @@ public class AudienceFileProcessor {
                 } catch (Exception ex) {
                     LOGGER.error("", ex);
                 } finally {
-                    LOGGER.warn(String.format("Ent to run task."));
+                    LOGGER.info(String.format("End to run task."));
                 }
             }
 
@@ -185,37 +186,66 @@ public class AudienceFileProcessor {
             if (!file.isDirectory()) {
                 LOGGER.info(String.format("set redis from (%s)", localFilePath));
 
-                AudienceWrapper audienceWrapper = new AudienceWrapper(
-                        ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
-                InputStreamReader inputStreamReader = null;
-                BufferedReader bufferedReader = null;
-                try {
-                    inputStreamReader = new InputStreamReader(new FileInputStream(file.getAbsolutePath()), "UTF-8");
-                    bufferedReader = new BufferedReader(inputStreamReader);
-                    String line;
-                    List<String> deviceIds = null;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        if(null == deviceIds){
-                            deviceIds = new ArrayList<>();
-                        }
-                        deviceIds.add(line);
+                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
 
-                        if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
-                            audienceWrapper.offer(deviceIds);
-                            deviceIds = null;
+                FileInputStream in = null;
+                FileChannel channel = null;
+                try {
+
+                    in = new FileInputStream(file);
+                    channel = in.getChannel();
+                    MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+
+                    List<String> deviceIds = null;
+                    boolean isNewLine = true;
+                    int index = 0;
+                    byte[] buff = null;
+                    long bufferLength = byteBuffer.limit();
+                    long pro = bufferLength/100; // 进度块
+                    int proNum = 1;
+                    for(int i=0; i<bufferLength; i++){
+                        if(isNewLine){
+                            buff = new byte[1024];
+                            index=0;
+                            isNewLine = false;
+                        }
+                        byte b = byteBuffer.get();
+                        if(b == '\n'){
+                            String line = new String(Arrays.copyOf(buff, index));
+                            if(null == deviceIds){
+                                deviceIds = new ArrayList<>();
+                            }
+                            deviceIds.add(line);
+                            if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
+                                audienceWrapper.offer(deviceIds);
+                                deviceIds = null;
+                            }
+                            isNewLine = true;
+                        }
+                        else{
+                            buff[index++] = b;
+                        }
+
+                        if(i >= (pro * proNum)){
+                            long percent = i * 100;
+                            percent = percent/bufferLength;
+                            LOGGER.info(String.format("process: %d%%", percent));
+                            proNum++;
                         }
                     }
+                    Constant.releaseBuff(byteBuffer); // 释放内存
+
                     if(null != deviceIds && !deviceIds.isEmpty()) {
                         audienceWrapper.offer(deviceIds);
                     }
+                    LOGGER.info("process: 100%");
                     audienceWrapper.isWaiting();
-
                 } finally {
-                    if (null != bufferedReader) {
-                        bufferedReader.close();
+                    if(null != channel){
+                        channel.close();
                     }
-                    if (null != inputStreamReader) {
-                        inputStreamReader.close();
+                    if (null != in) {
+                        in.close();
                     }
                 }
             }
@@ -286,11 +316,18 @@ public class AudienceFileProcessor {
             File file = new File(filePath);
             if (!file.isDirectory()) {
                 FileInputStream in = null;
+                FileChannel channel = null;
                 try {
                     in = new FileInputStream(file);
-                    MappedByteBuffer byteBuffer = in.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-                    return MD5.encrypt(byteBuffer);
+                    channel = in.getChannel();
+                    MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+                    String ret = MD5.encrypt(byteBuffer);
+                    Constant.releaseBuff(byteBuffer); // 释放内存
+                    return ret;
                 } finally {
+                    if(null != channel){
+                        channel.close();
+                    }
                     if (null != in) {
                         in.close();
                     }

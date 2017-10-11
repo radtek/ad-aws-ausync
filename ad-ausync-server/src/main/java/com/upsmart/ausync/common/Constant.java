@@ -2,6 +2,10 @@ package com.upsmart.ausync.common;
 
 import com.upsmart.server.common.uniquenumber.UniqueNumberGenerator;
 
+import java.lang.reflect.Method;
+import java.nio.MappedByteBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Map;
 
 /**
@@ -31,5 +35,26 @@ public final class Constant {
         int size = map.size();
         long rd = Math.abs(UniqueNumberGenerator.getInstance(20170313).next());
         return (int)(rd%size);
+    }
+
+    /**
+     * 释放内存映射文件
+     * @param byteBuffer
+     */
+    public static void releaseBuff(final MappedByteBuffer byteBuffer){
+
+        AccessController.doPrivileged(new PrivilegedAction() {
+            public Object run() {
+                try {
+                    Method getCleanerMethod = byteBuffer.getClass().getMethod("cleaner", new Class[0]);
+                    getCleanerMethod.setAccessible(true);
+                    sun.misc.Cleaner cleaner = (sun.misc.Cleaner) getCleanerMethod.invoke(byteBuffer, new Object[0]);
+                    cleaner.clean();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        });
     }
 }

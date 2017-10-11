@@ -57,7 +57,17 @@ public class AudienceWrapper {
         }
     }
 
-    public void offer(List<String> l){
+    /**
+     *
+     * @param l
+     * @throws InterruptedException
+     */
+    public void offer(List<String> l) throws InterruptedException {
+
+        while(queue.size() >= 10){
+            Thread.sleep(100);
+            continue;
+        }
         queue.offer(l);
     }
 
@@ -96,8 +106,6 @@ public class AudienceWrapper {
                         continue;
                     }
 
-                    LOGGER.info(String.format("%d ", list.size()));
-
                     for(String deviceId : list){
                         count++;
 
@@ -128,7 +136,7 @@ public class AudienceWrapper {
 
                             if(null != au){
                                 byte[] b = AudienceSerializer.buildToBytes(au);
-                                redisCluster.set(key,b);
+                                redisCluster.set(key,b); // redis.clients.jedis.exceptions.JedisDataException: OOM command not allowed when used memory > 'maxmemory'.
                             }
                         }
                     }
