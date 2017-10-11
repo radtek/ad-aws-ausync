@@ -187,7 +187,7 @@ public class AudienceFileProcessor {
             if (!file.isDirectory()) {
                 LOGGER.info(String.format("set redis from (%s)", localFilePath));
 
-//                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
+                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
 
                 FileInputStream in = null;
                 FileChannel channel = null;
@@ -226,7 +226,7 @@ public class AudienceFileProcessor {
                                 }
                                 deviceIds.add(line);
                                 if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
-//                                    audienceWrapper.offer(deviceIds);
+                                    audienceWrapper.offer(deviceIds);
                                     deviceIds = null;
                                 }
                                 isNewLine = true;
@@ -261,7 +261,7 @@ public class AudienceFileProcessor {
                                 }
                                 deviceIds.add(line);
                                 if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
-//                                    audienceWrapper.offer(deviceIds);
+                                    audienceWrapper.offer(deviceIds);
                                     deviceIds = null;
                                 }
                                 isNewLine = true;
@@ -278,10 +278,10 @@ public class AudienceFileProcessor {
                     }
 
                     if(null != deviceIds && !deviceIds.isEmpty()) {
-//                        audienceWrapper.offer(deviceIds);
+                        audienceWrapper.offer(deviceIds);
                     }
                     LOGGER.info("process: 100%");
-//                    audienceWrapper.isWaiting();
+                    audienceWrapper.isWaiting();
                 } finally {
                     if(null != listBuff && !listBuff.isEmpty()){
                         for(MappedByteBuffer buff : listBuff){
