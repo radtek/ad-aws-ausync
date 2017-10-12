@@ -122,10 +122,10 @@ public class AudienceWrapper {
                             if(null == au && ActionType.UPDATE.equals(actionType)){
                                 au = new Audience();
                                 au.version = 1;
-                                au.lastViewTime = DateUtil.dateToLong(new Date());
                                 newCount++;
                             }
 
+                            au.lastViewTime = DateUtil.dateToLong(new Date());
                             if(null == au.tags && ActionType.UPDATE.equals(actionType)){
                                 au.tags = new HashSet<>();
                             }

@@ -235,8 +235,8 @@ public class AudienceFileProcessor {
                                 buff[index++] = b;
                             }
 
-                            if(i >= (pro * proNum)){
-                                LOGGER.info(String.format("processA: %d%%", i * 100/fileLength));
+                            if((m * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
+                                LOGGER.info(String.format("process %d: %d%%",m, (m * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
                                 proNum++;
                             }
                         }
@@ -271,7 +271,7 @@ public class AudienceFileProcessor {
                             }
 
                             if((blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
-                                LOGGER.info(String.format("processB: %d%%", (blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
+                                LOGGER.info(String.format("process r: %d%%", (blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
                                 proNum++;
                             }
                         }
