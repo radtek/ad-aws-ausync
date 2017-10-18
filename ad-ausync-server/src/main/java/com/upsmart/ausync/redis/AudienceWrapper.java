@@ -126,14 +126,11 @@ public class AudienceWrapper {
                             }
 
                             au.lastViewTime = DateUtil.dateToLong(new Date());
-                            if(null == au.tags && ActionType.UPDATE.equals(actionType)){
-                                au.tags = new HashSet<>();
-                            }
                             if(ActionType.UPDATE.equals(actionType)) {
-                                au.tags.addAll(audienceIds);
+                                au.addTags(audienceIds);
                             }
                             else {
-                                au.tags.removeAll(audienceIds);
+                                au.delTags(audienceIds);
                             }
 
                             if(null != au){

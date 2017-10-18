@@ -72,16 +72,16 @@ public class AudienceFileProcessor {
 
                     TransData.Task task = Environment.getWorkQueue().getNext();
                     if (null != task) {
-                        LOGGER.warn(String.format("Begin to run task..."));
+                        LOGGER.info(String.format("Begin to run task..."));
 
                         boolean success = false;
                         try {
                             if (process(task)) {
-                                task.taskCode = "200";
+                                task.taskCode = "200"; // 成功
                                 Environment.getWorkQueue().updateStatus(task);
                                 success = true;
 
-                                LOGGER.warn(String.format("(%s) is successful", task.taskId));
+                                LOGGER.info(String.format("(%s) is successful", task.taskId));
                             }
                         } catch (Exception eex) {
                             LOGGER.error("", eex);
@@ -89,12 +89,12 @@ public class AudienceFileProcessor {
                         if (!success) {
                             task.retryNum--;
                             if (task.retryNum > 0) {
-                                task.taskCode = "201";
+                                task.taskCode = "202";
                                 Environment.getWorkQueue().updateStatus(task);
                                 Environment.getWorkQueue().add(task);
                                 LOGGER.warn(String.format("(%s) is error and retry.", task.taskId));
                             } else {
-                                task.taskCode = "205";
+                                task.taskCode = "203";
                                 Environment.getWorkQueue().updateStatus(task);
                                 LOGGER.warn(String.format("(%s) is error.", task.taskId));
                             }
@@ -115,9 +115,16 @@ public class AudienceFileProcessor {
         }
 
         private boolean process(TransData.Task task) throws Exception {
+            task.taskCode = "201"; // 正在进行
 
             Map<String, BrotherFiles> localFiles = downloadFile(task);
+            if(null == localFiles || localFiles.isEmpty()){
+                task.taskCode = "204";
+                return false;
+            }
+
             if (!VerifyMd5(localFiles)) {
+                task.taskCode = "205";
                 return false;
             }
 
