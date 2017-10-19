@@ -89,12 +89,10 @@ public class AudienceFileProcessor {
                         if (!success) {
                             task.retryNum--;
                             if (task.retryNum > 0) {
-                                task.taskCode = "202";
                                 Environment.getWorkQueue().updateStatus(task);
                                 Environment.getWorkQueue().add(task);
                                 LOGGER.warn(String.format("(%s) is error and retry.", task.taskId));
                             } else {
-                                task.taskCode = "203";
                                 Environment.getWorkQueue().updateStatus(task);
                                 LOGGER.warn(String.format("(%s) is error.", task.taskId));
                             }
@@ -120,16 +118,25 @@ public class AudienceFileProcessor {
             Map<String, BrotherFiles> localFiles = downloadFile(task);
             if(null == localFiles || localFiles.isEmpty()){
                 task.taskCode = "204";
+                task.taskMsg = "files in S3 not found";
                 return false;
             }
 
             if (!VerifyMd5(localFiles)) {
                 task.taskCode = "205";
+                task.taskMsg = "Verify MD5 error";
                 return false;
             }
 
             ActionType at = ActionType.convert(task.action);
-            return update(task, localFiles, at);
+            try{
+                return update(task, localFiles, at);
+            }
+            catch (Exception ex){
+                task.taskCode = "206";
+                task.taskMsg = ex.getMessage();
+            }
+            return false;
         }
 
         private boolean update(TransData.Task task, Map<String, BrotherFiles> map, ActionType at) throws Exception {

@@ -7,6 +7,7 @@ import com.upsmart.server.common.utils.DateUtil;
 import com.upsmart.server.common.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.exceptions.JedisDataException;
 
 import java.io.IOException;
 import java.util.Date;
@@ -42,6 +43,11 @@ public class AudienceWrapper {
 
     private ActionType actionType;
 
+    /**
+     * 执行结果
+     */
+    private boolean result = true;
+
     public AudienceWrapper(int threadCount, List<String> audienceIds, ActionType at){
         this.redisCluster = new RedisConnectionPool(RedisInfo.AUDIENCE);
         this.threadCount = (threadCount < 1 ? 1 : threadCount);
@@ -63,6 +69,10 @@ public class AudienceWrapper {
      * @throws InterruptedException
      */
     public void offer(List<String> l) throws InterruptedException {
+
+        if(!result){
+            throw new RuntimeException("redis used memory > maxmemory");
+        }
 
         while(queue.size() >= 10){
             Thread.sleep(100);
@@ -145,7 +155,13 @@ public class AudienceWrapper {
                     break;
                 }
                 catch (Exception ex){
-                    LOGGER.error("", ex);
+                    LOGGER.error(null, ex);
+                    String msg = ex.getMessage();
+                    if(null != msg && msg.indexOf("OOM") != -1){
+                        // out of redis memory
+                        result = false;
+                        break;
+                    }
                 }
                 finally {
 

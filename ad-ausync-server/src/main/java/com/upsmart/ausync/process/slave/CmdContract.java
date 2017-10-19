@@ -36,7 +36,6 @@ public class CmdContract implements Contract {
         printTrans(transCmd, trans);
         switch (transCmd){
             case AUDIENCE_UPDATE: // 更新max
-                LOGGER.info(String.format(">>> Begin to audience update."));
 
                 byte[] data = getData(trans);
                 TransData task = new TransData();
@@ -47,19 +46,14 @@ public class CmdContract implements Contract {
                 } catch (IOException e) {
                     LOGGER.info("", e);
                 }
-                finally {
-                    LOGGER.info(String.format("<<< End to audience update."));
-                }
                 break;
 
             case AUDIENCE_QUERY:
-                LOGGER.info(String.format(">>> Begin to audience query."));
 
                 data = getData(trans);
                 task = new TransData();
                 task = (TransData)task.deserializeFromGzip(data);
                 TransData transData =  Environment.getWorkQueue().getStatus(task);
-                LOGGER.info(String.format("<<< End to audience query."));
                 return response(1, transData.serializeJsonToGzip());
 
             case UNKNOWN:
@@ -81,7 +75,7 @@ public class CmdContract implements Contract {
         }
         String t = ci.getTime();
         if(!StringUtil.isNullOrEmpty(t)){
-            LOGGER.info(String.format("%s a new TransferInfo accepted: %s", transCmd.name(), t));
+            LOGGER.info(String.format("%s accepted: %s", transCmd.name(), t));
         }
     }
 
