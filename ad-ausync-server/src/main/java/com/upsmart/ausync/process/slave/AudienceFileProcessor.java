@@ -135,6 +135,8 @@ public class AudienceFileProcessor {
             catch (Exception ex){
                 task.taskCode = "206";
                 task.taskMsg = ex.getMessage();
+
+                LOGGER.error("", ex);
             }
             return false;
         }
@@ -148,6 +150,10 @@ public class AudienceFileProcessor {
                 if (!brotherFiles.verify) {
                     continue;
                 }
+                if(null == brotherFiles.gzipFilePath){
+                    continue;
+                }
+
                 String localFilePath = brotherFiles.gzipFilePath.substring(0, brotherFiles.gzipFilePath.lastIndexOf("."));
 
                 // 解压
@@ -160,6 +166,8 @@ public class AudienceFileProcessor {
         }
 
         private void gzipDecompress(String oldFile, String newFile) throws Exception {
+            LOGGER.info(String.format("decompress (%s) to (%s)", oldFile, newFile));
+
             File file = new File(oldFile);
             FileInputStream fis = null;
             FileOutputStream fos = null;
@@ -199,6 +207,11 @@ public class AudienceFileProcessor {
         private void setRedis(String localFilePath, List<String> audienceIds, ActionType at) throws IOException, InterruptedException {
             File file = new File(localFilePath);
             if (!file.isDirectory()) {
+                if(file.length() <= 0){
+                    // 文件没有内容
+                    LOGGER.warn(String.format("no content in (%s)", localFilePath));
+                    return;
+                }
                 LOGGER.info(String.format("set redis from (%s)", localFilePath));
 
                 AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
@@ -294,8 +307,8 @@ public class AudienceFileProcessor {
                     if(null != deviceIds && !deviceIds.isEmpty()) {
                         audienceWrapper.offer(deviceIds);
                     }
-                    LOGGER.info("process: 100%");
                     audienceWrapper.isWaiting();
+                    LOGGER.info("process: 100%");
                 } finally {
                     if(null != listBuff && !listBuff.isEmpty()){
                         for(MappedByteBuffer buff : listBuff){
@@ -328,15 +341,20 @@ public class AudienceFileProcessor {
 
                 String prefix = name.substring(0, name.indexOf("."));
                 String suffix = name.substring(name.lastIndexOf("."));
-                if (!map.containsKey(prefix)) {
-                    map.put(prefix, new BrotherFiles());
-                }
+
                 if (suffix.equals(".md5")) {
+                    if (!map.containsKey(prefix)) {
+                        map.put(prefix, new BrotherFiles());
+                    }
                     map.get(prefix).md5FilePath = localFile;
                 } else if (suffix.equals(".gz")) {
+                    if (!map.containsKey(prefix)) {
+                        map.put(prefix, new BrotherFiles());
+                    }
                     map.get(prefix).gzipFilePath = localFile;
                 } else {
-                    map.get(prefix).filePath = localFile;
+                    // 其它后缀的文件
+//                    map.get(prefix).filePath = localFile;
                 }
             }
             return map;

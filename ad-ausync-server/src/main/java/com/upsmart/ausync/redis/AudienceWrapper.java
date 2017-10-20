@@ -47,6 +47,7 @@ public class AudienceWrapper {
      * 执行结果
      */
     private boolean result = true;
+    private String resultStr = "";
 
     public AudienceWrapper(int threadCount, List<String> audienceIds, ActionType at){
         this.redisCluster = new RedisConnectionPool(RedisInfo.AUDIENCE);
@@ -71,7 +72,7 @@ public class AudienceWrapper {
     public void offer(List<String> l) throws InterruptedException {
 
         if(!result){
-            throw new RuntimeException("redis used memory > maxmemory");
+            throw new RuntimeException(resultStr);
         }
 
         while(queue.size() >= 10){
@@ -156,12 +157,9 @@ public class AudienceWrapper {
                 }
                 catch (Exception ex){
                     LOGGER.error(null, ex);
-                    String msg = ex.getMessage();
-                    if(null != msg && msg.indexOf("OOM") != -1){
-                        // out of redis memory
-                        result = false;
-                        break;
-                    }
+                    result = false;
+                    resultStr = ex.getMessage();
+                    break;
                 }
                 finally {
 
