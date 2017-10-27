@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -171,5 +173,35 @@ public class WorkQueue {
                 writer.close();
             }
         }
+    }
+
+    /**
+     * 根据audience id 获得最近的一次更新audience的taskid
+     * @param newTask
+     * @return
+     */
+    public TransData.Task getLatestTaskId(TransData.Task newTask){
+        if(null == newTask || null == newTask.audienceIds || newTask.audienceIds.isEmpty()){
+            return null;
+        }
+
+        TransData.Task result = null;
+        long time = -1;
+        Iterator<Map.Entry<String, TransData.Task>> iter = statusMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<String, TransData.Task> entry = iter.next();
+            TransData.Task tt = entry.getValue();
+
+            if(null == tt.audienceIds || tt.audienceIds.isEmpty()){
+                continue;
+            }
+            String aid = tt.audienceIds.get(0);
+            if(aid.equals(newTask.audienceIds.get(0)) && tt.taskCode.equals("200") && tt.time > time){
+                result = tt;
+                time = tt.time;
+            }
+        }
+
+        return result;
     }
 }

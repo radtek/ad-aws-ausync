@@ -13,6 +13,7 @@ import com.upsmart.server.common.codec.MD5;
 import com.upsmart.server.common.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MarkerIgnoringBase;
 
 import java.io.*;
 import java.nio.MappedByteBuffer;
@@ -130,6 +131,17 @@ public class AudienceFileProcessor {
 
             ActionType at = ActionType.convert(task.action);
             try{
+                if(task.action.equals(ActionType.UPDATE.getValue())){
+                    // 获得当前audience的上一次更新
+                    TransData.Task latestTask = Environment.getWorkQueue().getLatestTaskId(task);
+                    if(null != latestTask) {
+                        LOGGER.info(String.format("DELETE data by latest taskid(%s)", latestTask.taskId));
+                        Map<String, BrotherFiles> latestTaskFiles = downloadFile(latestTask);
+                        if(null != latestTaskFiles && VerifyMd5(latestTaskFiles)) {
+                            update(latestTask, latestTaskFiles, ActionType.DELETE);
+                        }
+                    }
+                }
                 return update(task, localFiles, at);
             }
             catch (Exception ex){
@@ -142,6 +154,9 @@ public class AudienceFileProcessor {
         }
 
         private boolean update(TransData.Task task, Map<String, BrotherFiles> map, ActionType at) throws Exception {
+            if(null == task || null == map){
+                return false;
+            }
             Iterator<Map.Entry<String, BrotherFiles>> iter = map.entrySet().iterator();
             while (iter.hasNext()) {
                 Map.Entry<String, BrotherFiles> entry = iter.next();
@@ -212,7 +227,7 @@ public class AudienceFileProcessor {
                     LOGGER.warn(String.format("no content in (%s)", localFilePath));
                     return;
                 }
-                LOGGER.info(String.format("set redis from (%s)", localFilePath));
+                LOGGER.info(String.format("%s redis from (%s)",at.name(), localFilePath));
 
                 AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
 
@@ -326,6 +341,10 @@ public class AudienceFileProcessor {
         }
 
         private Map<String, BrotherFiles> downloadFile(TransData.Task task) {
+            if(null == task){
+                return null;
+            }
+
             Map<String, BrotherFiles> map = new HashMap<>();
 
             AwsS3Wrapper awsS3Wrapper = new AwsS3Wrapper();

@@ -81,6 +81,7 @@ public class AuUpdateProcessor implements HttpProcessor {
         task.taskId = auUpdateRequest.taskId;
         task.audienceIds = new ArrayList<>();
         task.audienceIds.add(auUpdateRequest.audienceId);
+        task.time = Long.valueOf(DateUtil.format(new Date(), "yyyyMMddHHmmss"));
         transData.tasks.add(task);
 
         if(!trans(transData)){

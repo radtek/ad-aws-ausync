@@ -16,5 +16,6 @@ public class TransData extends SerializeBase{
         public String taskCode = "0";
         public String taskMsg = "";
         public int retryNum = 10; // 重试次数
+        public long time;
     }
 }

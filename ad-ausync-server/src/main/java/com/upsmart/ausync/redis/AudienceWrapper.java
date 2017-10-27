@@ -136,17 +136,16 @@ public class AudienceWrapper {
                                 newCount++;
                             }
 
-                            au.lastViewTime = DateUtil.dateToLong(new Date());
-                            if(ActionType.UPDATE.equals(actionType)) {
-                                au.addTags(audienceIds);
-                            }
-                            else {
-                                au.delTags(audienceIds);
-                            }
+                            if(null != au) {
+                                au.lastViewTime = DateUtil.dateToLong(new Date());
+                                if (ActionType.UPDATE.equals(actionType)) {
+                                    au.addTags(audienceIds);
+                                } else {
+                                    au.delTags(audienceIds);
+                                }
 
-                            if(null != au){
                                 byte[] b = AudienceSerializer.buildToBytes(au);
-                                redisCluster.set(key,b); // redis.clients.jedis.exceptions.JedisDataException: OOM command not allowed when used memory > 'maxmemory'.
+                                redisCluster.set(key, b); // redis.clients.jedis.exceptions.JedisDataException: OOM command not allowed when used memory > 'maxmemory'.
                             }
                         }
                     }
