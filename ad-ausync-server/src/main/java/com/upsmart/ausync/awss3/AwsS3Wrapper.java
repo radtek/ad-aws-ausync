@@ -6,10 +6,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
-import com.amazonaws.services.s3.transfer.Download;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-import com.amazonaws.services.s3.transfer.TransferProgress;
+import com.amazonaws.services.s3.transfer.*;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import org.slf4j.LoggerFactory;
 
@@ -34,32 +31,57 @@ public class AwsS3Wrapper {
         s3 = awsS3Builder.build();
     }
 
+    /**
+     * bucket下所有文件
+     * @return
+     */
     public List<AwsS3FileInfo> getAllFilesPath() {
-        ObjectListing objectListing = s3.listObjects(ConfigurationHelper.SLAVE_AWS_BUCKET_NAME);
         List<AwsS3FileInfo> files = new ArrayList<>();
-        for(S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-            AwsS3FileInfo awsS3FileInfo = new AwsS3FileInfo();
-            awsS3FileInfo.path = objectSummary.getKey();
-            awsS3FileInfo.size = objectSummary.getSize();
-            awsS3FileInfo.lastModified = objectSummary.getLastModified();
-            files.add(awsS3FileInfo);
+        ObjectListing objectListing = s3.listObjects(ConfigurationHelper.SLAVE_AWS_BUCKET_NAME);
+        do{
+            if(null != objectListing) {
+                for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                    AwsS3FileInfo awsS3FileInfo = new AwsS3FileInfo();
+                    awsS3FileInfo.path = objectSummary.getKey();
+                    awsS3FileInfo.size = objectSummary.getSize();
+                    awsS3FileInfo.lastModified = objectSummary.getLastModified();
+                    files.add(awsS3FileInfo);
+                }
+            }
+            objectListing = s3.listNextBatchOfObjects(objectListing);
         }
+        while(null != objectListing
+                && null != objectListing.getObjectSummaries()
+                && !objectListing.getObjectSummaries().isEmpty());
         return files;
     }
 
+    /**
+     * prefix文件夹下的所有
+     * @param prefix
+     * @return
+     */
     public List<AwsS3FileInfo> getAllFilesPath(String prefix) {
         ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
         listObjectsRequest.setBucketName(ConfigurationHelper.SLAVE_AWS_BUCKET_NAME);
         listObjectsRequest.setPrefix(prefix);
-        ObjectListing objectListing = s3.listObjects(listObjectsRequest);
         List<AwsS3FileInfo> files = new ArrayList<>();
-        for(S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-            AwsS3FileInfo awsS3FileInfo = new AwsS3FileInfo();
-            awsS3FileInfo.path = objectSummary.getKey();
-            awsS3FileInfo.size = objectSummary.getSize();
-            awsS3FileInfo.lastModified = objectSummary.getLastModified();
-            files.add(awsS3FileInfo);
+        ObjectListing objectListing = s3.listObjects(listObjectsRequest);
+        do {
+            if(null != objectListing) {
+                for(S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                    AwsS3FileInfo awsS3FileInfo = new AwsS3FileInfo();
+                    awsS3FileInfo.path = objectSummary.getKey();
+                    awsS3FileInfo.size = objectSummary.getSize();
+                    awsS3FileInfo.lastModified = objectSummary.getLastModified();
+                    files.add(awsS3FileInfo);
+                }
+            }
+            objectListing = s3.listNextBatchOfObjects(objectListing);
         }
+        while(null != objectListing
+                && null != objectListing.getObjectSummaries()
+                && !objectListing.getObjectSummaries().isEmpty());
         return files;
     }
 
@@ -69,6 +91,11 @@ public class AwsS3Wrapper {
         return s3Object.getObjectMetadata();
     }
 
+    /**
+     * 下载
+     * @param filePath
+     * @param file
+     */
     public void downloadFile(String filePath, File file) {
         TransferManagerBuilder transferManagerBuilder = TransferManagerBuilder.standard();
         transferManagerBuilder.setS3Client(s3);
@@ -79,12 +106,43 @@ public class AwsS3Wrapper {
             try {
                 Thread.sleep(1000);
                 if(download.isDone()){
-                    LOGGER.info(String.format("down >>> %s - done", filePath));
+                    LOGGER.info(String.format("download >>> %s - done", filePath));
                     break;
                 }
                 else{
                     TransferProgress transferProgress = download.getProgress();
-                    LOGGER.info(String.format("down >>> %s - %f", filePath, transferProgress.getPercentTransferred()));
+                    LOGGER.info(String.format("download >>> %s - %f", filePath, transferProgress.getPercentTransferred()));
+                }
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+        if(null != tx){
+            tx.shutdownNow(false);
+        }
+    }
+
+    /**
+     * 上传
+     * @param filePath
+     * @param file
+     */
+    public void uploadFile(String filePath, File file){
+        TransferManagerBuilder transferManagerBuilder = TransferManagerBuilder.standard();
+        transferManagerBuilder.setS3Client(s3);
+
+        TransferManager tx = transferManagerBuilder.build();
+        Upload upload = tx.upload(ConfigurationHelper.SLAVE_AWS_BUCKET_NAME, filePath, file);
+        while(true){
+            try {
+                Thread.sleep(1000);
+                if(upload.isDone()){
+                    LOGGER.info(String.format("upload >>> %s - done", filePath));
+                    break;
+                }
+                else{
+                    TransferProgress transferProgress = upload.getProgress();
+                    LOGGER.info(String.format("upload >>> %s - %f", filePath, transferProgress.getPercentTransferred()));
                 }
             } catch (InterruptedException e) {
                 break;

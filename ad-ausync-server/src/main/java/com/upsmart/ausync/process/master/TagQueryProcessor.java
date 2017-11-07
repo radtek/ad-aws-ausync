@@ -2,45 +2,27 @@ package com.upsmart.ausync.process.master;
 
 import com.hang.netty.httpwrapper.HttpRequestWrapper;
 import com.hang.netty.httpwrapper.HttpResponseWrapper;
-import com.hang.netty.processor.HttpProcessor;
-import com.upsmart.ausync.common.Constant;
-import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.model.AuQueryResponse;
 import com.upsmart.ausync.model.TransData;
-import com.upsmart.ausync.model.enums.ActionType;
 import com.upsmart.ausync.model.enums.TransCmd;
-import com.upsmart.server.common.utils.DateUtil;
 import com.upsmart.server.common.utils.GsonUtil;
 import com.upsmart.server.common.utils.StringUtil;
-import com.upsmart.server.trans.client.ClientProxy;
-import com.upsmart.server.trans.client.ThriftClient;
-import com.upsmart.server.trans.client.args.ThriftCliConnectionArgs;
-import com.upsmart.server.trans.client.recvdata.RecvData;
-import com.upsmart.server.trans.enums.RecvStatus;
-import com.upsmart.server.trans.transinterface.BinaryData;
-import com.upsmart.server.trans.transinterface.ClientInfo;
-import com.upsmart.server.trans.transinterface.TransferInfo;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
- * Created by yuhang on 17-9-28.
- *
- * redis接口查询
+ * Created by yuhang on 17-11-6.
  */
-public class AuQueryProcessor extends BaseProcessor {
+public class TagQueryProcessor extends BaseProcessor{
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuQueryProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TagQueryProcessor.class);
 
     @Override
     public boolean process(HttpRequestWrapper request, HttpResponseWrapper response) {
-
         List<String> listData;
         byte[] data = request.getBuff();
         if(null == data){
@@ -72,7 +54,7 @@ public class AuQueryProcessor extends BaseProcessor {
             transData.tasks.add(task);
         }
 
-        TransData ret = trans(transData, TransCmd.AUDIENCE_QUERY.getValue());
+        TransData ret = trans(transData, TransCmd.TAG_QUERY.getValue());
         if(null == ret || null == ret.tasks || ret.tasks.isEmpty()){
             return returnData(response, "600", "fail to transfer data to remote service", null);
         }

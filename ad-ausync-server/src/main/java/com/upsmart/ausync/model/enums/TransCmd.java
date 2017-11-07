@@ -8,7 +8,10 @@ public enum TransCmd {
     UNKNOWN("unknown"),
 
     AUDIENCE_UPDATE("AUDIENCE_UPDATE"),
-    AUDIENCE_QUERY("AUDIENCE_QUERY");
+    AUDIENCE_QUERY("AUDIENCE_QUERY"),
+
+    TAG_UPDATE("TAG_UPDATE"),
+    TAG_QUERY("TAG_QUERY");
 
     private String value;
     TransCmd(String value){

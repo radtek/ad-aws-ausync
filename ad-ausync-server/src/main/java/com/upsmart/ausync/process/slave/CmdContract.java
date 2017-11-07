@@ -41,8 +41,9 @@ public class CmdContract implements Contract {
                 TransData task = new TransData();
                 task = (TransData)task.deserializeFromGzip(data);
                 try {
-                    Environment.getWorkQueue().add(task);
-                    return response(1);
+                    Environment.getAudienceWorkQueue().add(task);
+                    TransData transData =  Environment.getAudienceWorkQueue().getStatus(task);
+                    return response(1, transData.serializeJsonToGzip());
                 } catch (IOException e) {
                     LOGGER.info("", e);
                 }
@@ -53,7 +54,28 @@ public class CmdContract implements Contract {
                 data = getData(trans);
                 task = new TransData();
                 task = (TransData)task.deserializeFromGzip(data);
-                TransData transData =  Environment.getWorkQueue().getStatus(task);
+                TransData transData =  Environment.getAudienceWorkQueue().getStatus(task);
+                return response(1, transData.serializeJsonToGzip());
+
+            case TAG_UPDATE:
+                byte[] tag = getData(trans);
+                TransData taskTag = new TransData();
+                taskTag = (TransData)taskTag.deserializeFromGzip(tag);
+                try {
+                    Environment.getTagWorkQueue().add(taskTag);
+                    transData =  Environment.getTagWorkQueue().getStatus(taskTag);
+                    return response(1, transData.serializeJsonToGzip());
+                } catch (IOException e) {
+                    LOGGER.info("", e);
+                }
+                break;
+
+            case TAG_QUERY:
+
+                data = getData(trans);
+                task = new TransData();
+                task = (TransData)task.deserializeFromGzip(data);
+                transData =  Environment.getTagWorkQueue().getStatus(task);
                 return response(1, transData.serializeJsonToGzip());
 
             case UNKNOWN:

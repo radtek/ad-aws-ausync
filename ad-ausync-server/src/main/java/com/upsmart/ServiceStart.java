@@ -7,6 +7,8 @@ import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.core.Environment;
 import com.upsmart.ausync.process.master.AuQueryProcessor;
 import com.upsmart.ausync.process.master.AuUpdateProcessor;
+import com.upsmart.ausync.process.master.TagQueryProcessor;
+import com.upsmart.ausync.process.master.TagUpdateProcessor;
 import com.upsmart.ausync.process.slave.AuTestProcessor;
 import com.upsmart.server.configuration.ConfigurationManager;
 import org.apache.log4j.PropertyConfigurator;
@@ -50,6 +52,8 @@ public class ServiceStart {
         conf.addProcessor("/audience/pushtrans", new AuUpdateProcessor());
         conf.addProcessor("/audience/query", new AuQueryProcessor());
         conf.addProcessor("/audience/test", new AuTestProcessor());
+        conf.addProcessor("/tag/pushtrans", new TagUpdateProcessor());
+        conf.addProcessor("/tag/query", new TagQueryProcessor());
         conf.setHttpPort(ConfigurationHelper.HTTP_PORT);
 
         // 服务启动

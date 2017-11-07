@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,12 +62,12 @@ public class AuTestProcessor implements HttpProcessor {
         return true;
     }
 
-    public static void main(String[] args) throws InvalidProtocolBufferException, UnsupportedEncodingException {
+    public static void main(String[] args) throws InvalidProtocolBufferException, UnsupportedEncodingException, URISyntaxException {
         AuTestProcessor ap = new AuTestProcessor();
         ap.setFreq(null);
     }
 
-    private String setTag(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException{
+    private String setTag(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException, URISyntaxException {
         String deviceId = request.getParam("id");
         String tag = request.getParam("tag");
         String del = request.getParam("del");
@@ -112,7 +113,7 @@ public class AuTestProcessor implements HttpProcessor {
         return (null == au ? "no data" : au.toString());
     }
 
-    private String setFreq(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException{
+    private String setFreq(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException, URISyntaxException {
 
         String deviceId = request.getParam("id");
         String campaignId = request.getParam("cpid");
@@ -179,13 +180,12 @@ public class AuTestProcessor implements HttpProcessor {
         return (null == au ? "no data" : au.toString());
     }
 
-    private String show(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException {
+    private String show(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException, URISyntaxException {
         String deviceId = request.getParam("id");
         RedisConnectionPool redisCluster = null;
         try {
             if (!StringUtil.isNullOrEmpty(deviceId)) {
                 redisCluster = new RedisConnectionPool(RedisInfo.AUDIENCE);
-
                 byte[] key = deviceId.getBytes("UTF-8");
                 byte[] data = redisCluster.get(key);
                 if (null != data && data.length > 0) {

@@ -5,10 +5,9 @@ import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.model.WorkQueue;
 import com.upsmart.ausync.process.slave.AcceptCmd;
 import com.upsmart.ausync.process.slave.AudienceFileProcessor;
+import com.upsmart.ausync.process.slave.TagFileProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 /**
  * Created by yuhang on 17-5-15.
@@ -17,8 +16,10 @@ public final class Environment {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Environment.class);
 
-    private static WorkQueue workQueue;
-    public static WorkQueue getWorkQueue(){return workQueue;}
+    private static WorkQueue audienceWorkQueue;
+    private static WorkQueue tagWorkQueue;
+    public static WorkQueue getAudienceWorkQueue(){return audienceWorkQueue;}
+    public static WorkQueue getTagWorkQueue(){return tagWorkQueue;}
 
     public static void initialize() {
         LOGGER.info("****************************Hello, darling !!!");
@@ -34,9 +35,11 @@ public final class Environment {
             }
             else if(ConfigurationHelper.WORK_MODEL.equals(Constant.WORK_MODEL_SLAVE)){
                 LOGGER.info("Work in slave model!");
-                workQueue = new WorkQueue();
+                audienceWorkQueue = new WorkQueue(ConfigurationHelper.SLAVE_HISTORY_LOG + "/audience");
+                tagWorkQueue = new WorkQueue(ConfigurationHelper.SLAVE_HISTORY_LOG + "/tag");
                 AcceptCmd.getInstance().start();
                 AudienceFileProcessor.getInstance().start();
+                TagFileProcessor.getInstance().start();
             }
             else{
                 LOGGER.error("Who am I? Please set work model!");
@@ -61,6 +64,7 @@ public final class Environment {
         else if(ConfigurationHelper.WORK_MODEL.equals("slave")){
             AcceptCmd.getInstance().stop();
             AudienceFileProcessor.getInstance().stop();
+            TagFileProcessor.getInstance().stop();
         }
 
         LOGGER.info("Environment disposed.");

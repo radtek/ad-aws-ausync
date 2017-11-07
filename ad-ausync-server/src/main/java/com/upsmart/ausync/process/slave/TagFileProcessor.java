@@ -1,37 +1,42 @@
 package com.upsmart.ausync.process.slave;
 
+import com.upsmart.audienceproto.model.TagScoreInfo;
 import com.upsmart.ausync.common.Constant;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.core.Environment;
-import com.upsmart.ausync.model.AuRedis;
+import com.upsmart.ausync.model.AuTagRedis;
 import com.upsmart.ausync.model.BrotherFiles;
 import com.upsmart.ausync.model.TransData;
 import com.upsmart.ausync.model.enums.ActionType;
 import com.upsmart.ausync.redis.AudienceWrapper;
+import com.upsmart.ausync.redis.TagWrapper;
+import com.upsmart.server.common.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 
 /**
- * Created by yuhang on 17-9-30.
+ * Created by yuhang on 17-11-7.
  */
-public class AudienceFileProcessor {
+public class TagFileProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AudienceFileProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TagFileProcessor.class);
 
     private static class Builder {
-        public final static AudienceFileProcessor instance = new AudienceFileProcessor();
+        public final static TagFileProcessor instance = new TagFileProcessor();
     }
-    public static AudienceFileProcessor getInstance() {
+    public static TagFileProcessor getInstance() {
         return Builder.instance;
     }
 
-    private AudienceFileProcessor() {
+    private TagFileProcessor() {
     }
 
     private Thread thread;
@@ -58,22 +63,22 @@ public class AudienceFileProcessor {
     }
 
     class Worker extends FileProcessor {
+
         @Override
         public void run() {
-
             while (enable) {
                 try {
                     Thread.sleep(30000);
 
-                    TransData.Task task = Environment.getAudienceWorkQueue().getNext();
+                    TransData.Task task = Environment.getTagWorkQueue().getNext();
                     if (null != task) {
-                        LOGGER.info(String.format("Begin to run AUDIENCE task..."));
+                        LOGGER.info(String.format("Begin to run task..."));
 
                         boolean success = false;
                         try {
                             if (process(task)) {
                                 task.taskCode = "200"; // 成功
-                                Environment.getAudienceWorkQueue().updateStatus(task);
+                                Environment.getTagWorkQueue().updateStatus(task);
                                 success = true;
 
                                 LOGGER.info(String.format("(%s) is successful", task.taskId));
@@ -84,16 +89,16 @@ public class AudienceFileProcessor {
                         if (!success) {
                             task.retryNum--;
                             if (task.retryNum > 0) {
-                                Environment.getAudienceWorkQueue().updateStatus(task);
-                                Environment.getAudienceWorkQueue().add(task);
+                                Environment.getTagWorkQueue().updateStatus(task);
+                                Environment.getTagWorkQueue().add(task);
                                 LOGGER.warn(String.format("(%s) is error and retry.", task.taskId));
                             } else {
-                                Environment.getAudienceWorkQueue().updateStatus(task);
+                                Environment.getTagWorkQueue().updateStatus(task);
                                 LOGGER.warn(String.format("(%s) is error.", task.taskId));
                             }
                         }
 
-                        LOGGER.info(String.format("There are %d tasks to be run after a moment.", Environment.getAudienceWorkQueue().getCount()));
+                        LOGGER.info(String.format("There are %d tasks to be run after a moment.", Environment.getTagWorkQueue().getCount()));
                     }
                 } catch (InterruptedException iex) {
                     break;
@@ -104,7 +109,7 @@ public class AudienceFileProcessor {
                 }
             }
 
-            LOGGER.warn("AudienceFileProcessor has been stopped!");
+            LOGGER.warn("TagFileProcessor has been stopped!");
         }
 
         private boolean process(TransData.Task task) throws Exception {
@@ -125,17 +130,6 @@ public class AudienceFileProcessor {
 
             ActionType at = ActionType.convert(task.action);
             try{
-                if(task.action.equals(ActionType.UPDATE.getValue())){
-                    // 获得当前audience的上一次更新
-                    TransData.Task latestTask = Environment.getAudienceWorkQueue().getLatestTaskId(task);
-                    if(null != latestTask) {
-                        LOGGER.info(String.format("DELETE data by latest taskid(%s)", latestTask.taskId));
-                        Map<String, BrotherFiles> latestTaskFiles = downloadFile(latestTask);
-                        if(null != latestTaskFiles && VerifyMd5(latestTaskFiles)) {
-                            update(latestTask, latestTaskFiles, ActionType.DELETE);
-                        }
-                    }
-                }
                 return update(task, localFiles, at);
             }
             catch (Exception ex){
@@ -146,6 +140,7 @@ public class AudienceFileProcessor {
             }
             return false;
         }
+
 
         private boolean update(TransData.Task task, Map<String, BrotherFiles> map, ActionType at) throws Exception {
             if(null == task || null == map){
@@ -168,13 +163,14 @@ public class AudienceFileProcessor {
                 // 解压
                 gzipDecompress(brotherFiles.gzipFilePath, localFilePath);
                 // 读写redis
-                setRedis(localFilePath, task.audienceIds, at);
+                setRedis(localFilePath, at);
             }
 
             return true;
         }
 
-        private void setRedis(String localFilePath, List<String> audienceIds, ActionType at) throws IOException, InterruptedException, URISyntaxException {
+
+        private void setRedis(String localFilePath, ActionType at) throws IOException, InterruptedException, URISyntaxException {
             File file = new File(localFilePath);
             if (!file.isDirectory()) {
                 if(file.length() <= 0){
@@ -184,7 +180,7 @@ public class AudienceFileProcessor {
                 }
                 LOGGER.info(String.format("%s redis from (%s)",at.name(), localFilePath));
 
-                AudienceWrapper audienceWrapper = new AudienceWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, audienceIds, at);
+                TagWrapper audienceWrapper = new TagWrapper(ConfigurationHelper.SLAVE_QUEUE_THREAD_COUNT, at);
 
                 FileInputStream in = null;
                 FileChannel channel = null;
@@ -194,7 +190,7 @@ public class AudienceFileProcessor {
                     in = new FileInputStream(file);
                     channel = in.getChannel();
 
-                    List<AuRedis> deviceIds = null;
+                    List<AuTagRedis> deviceIds = null;
                     boolean isNewLine = true;
                     int index = 0;
                     byte[] buff = null;
@@ -221,7 +217,7 @@ public class AudienceFileProcessor {
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
                                 }
-                                deviceIds.add(new AuRedis(line));
+                                deviceIds.add(parseLine(line));
                                 if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
                                     audienceWrapper.offer(deviceIds);
                                     deviceIds = null;
@@ -256,7 +252,7 @@ public class AudienceFileProcessor {
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
                                 }
-                                deviceIds.add(new AuRedis(line));
+                                deviceIds.add(parseLine(line));
                                 if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
                                     audienceWrapper.offer(deviceIds);
                                     deviceIds = null;
@@ -295,14 +291,49 @@ public class AudienceFileProcessor {
             }
         }
 
+        /**
+         * 解析 每一行的数据: [device id]|tag1,value|tag2,value|....|tagN,value
+         * @param line
+         * @return
+         */
+        private AuTagRedis parseLine(String line){
+            if(StringUtil.isNullOrEmpty(line)){
+                return null;
+            }
+
+            String[] arr = line.split(Constant.REGEX_SYMBOL_VERTICAL);
+            if(null != arr && arr.length > 1){
+                try {
+                    AuTagRedis auTagRedis = new AuTagRedis(arr[0]);
+                    for (int i = 1; i < arr.length; ++i) {
+                        if (null == arr[i]) {
+                            continue;
+                        }
+                        String[] t = arr[i].split(Constant.SYMBOL_COMMA);
+                        if (null != t && t.length >= 2) {
+                            TagScoreInfo tsi = new TagScoreInfo();
+                            tsi.tagId = t[0];
+                            tsi.tagScore = Integer.valueOf(t[1]);
+                            auTagRedis.tagScore.add(tsi);
+                        }
+                    }
+                    return auTagRedis;
+                }
+                catch (Exception ex){
+                    LOGGER.error(String.format("parse error (%s)", line), ex);
+                }
+            }
+            return null;
+        }
+
         @Override
         protected String getAwsS3FilePath() {
-            return ConfigurationHelper.SLAVE_AWS_AUDIENCE_PATH;
+            return ConfigurationHelper.SLAVE_AWS_TAG_PATH;
         }
 
         @Override
         protected String getLocalFilePath() {
-            return ConfigurationHelper.SLAVE_LOCAL_AUDIENCE_PATH + "/audience";
+            return ConfigurationHelper.SLAVE_LOCAL_AUDIENCE_PATH + "/tag";
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.upsmart.ausync.awss3;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.upsmart.ausync.configuration.ConfigurationHelper;
 import com.upsmart.ausync.model.BrotherFiles;
 import com.upsmart.server.configuration.ConfigurationManager;
@@ -40,7 +41,7 @@ public class AwsS3WrapperTest {
             System.out.println(String.format("%s, \t(%s),%s",
                     file.path, file.convertSize(), file.lastModified ));
         }
-        System.out.println("finished!");
+        System.out.println("finished! "+listFiles.size());
     }
 
     @Test
@@ -49,6 +50,18 @@ public class AwsS3WrapperTest {
         String filePath = "precise/170918/2017-09_application_1502259846820_0513_00_full.gz";
         File file = new File("/home/upsmart/works/2017-09_application_1502259846820_0513_00_full.gz");
         awsS3Wrapper.downloadFile(filePath, file);
+    }
+
+    @Test
+    public void testUpload(){
+
+        String filePath = "tag/11111/tag1.gz";
+        File file = new File("/home/upsmart/works/tag1.gz");
+        awsS3Wrapper.uploadFile(filePath, file);
+
+        filePath = "tag/11111/tag1.md5";
+        file = new File("/home/upsmart/works/tag1.md5");
+        awsS3Wrapper.uploadFile(filePath, file);
     }
 
     @Test

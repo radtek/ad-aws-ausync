@@ -28,17 +28,19 @@ public class WorkQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkQueue.class);
 
+    private String historyFilePath;
     private ConcurrentLinkedDeque<TransData.Task> workQueue;
     private ConcurrentHashMap<String, TransData.Task> statusMap;
     private CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);
 
-    public WorkQueue() throws IOException {
+    public WorkQueue(String historyFilePath) throws IOException {
+        this.historyFilePath = historyFilePath;
         workQueue = new ConcurrentLinkedDeque<>();
         statusMap = new ConcurrentHashMap<>();
 
-        Path dirPath = Paths.get(ConfigurationHelper.SLAVE_HISTORY_LOG);
+        Path dirPath = Paths.get(historyFilePath);
         Files.createDirectories(dirPath);
-        readFile(ConfigurationHelper.SLAVE_HISTORY_LOG);
+        readFile(historyFilePath);
     }
 
     public void add(TransData transData) throws IOException {
@@ -63,7 +65,7 @@ public class WorkQueue {
         sb.append(new Date()).append(Constant.SYMBOL_VERTICAL);
         sb.append(task.serializeJson());
         sb.append(Constant.LINE_SEPARATOR);
-        writeFile(ConfigurationHelper.SLAVE_HISTORY_LOG, task.taskId, sb.toString());
+        writeFile(historyFilePath, task.taskId, sb.toString());
     }
 
     public TransData.Task getNext(){
@@ -84,7 +86,7 @@ public class WorkQueue {
             sb.append(new Date()).append(Constant.SYMBOL_VERTICAL);
             sb.append(t.serializeJson());
             sb.append(Constant.LINE_SEPARATOR);
-            writeFile(ConfigurationHelper.SLAVE_HISTORY_LOG, t.taskId, sb.toString());
+            writeFile(historyFilePath, t.taskId, sb.toString());
         }
     }
 
