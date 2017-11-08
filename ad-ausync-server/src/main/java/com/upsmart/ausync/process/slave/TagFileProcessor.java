@@ -217,7 +217,7 @@ public class TagFileProcessor {
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
                                 }
-                                deviceIds.add(parseLine(line));
+                                deviceIds.addAll(parseLine(line));
                                 if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
                                     audienceWrapper.offer(deviceIds);
                                     deviceIds = null;
@@ -252,7 +252,7 @@ public class TagFileProcessor {
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
                                 }
-                                deviceIds.add(parseLine(line));
+                                deviceIds.addAll(parseLine(line));
                                 if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
                                     audienceWrapper.offer(deviceIds);
                                     deviceIds = null;
@@ -292,19 +292,21 @@ public class TagFileProcessor {
         }
 
         /**
-         * 解析 每一行的数据: [device id]|tag1,value|tag2,value|....|tagN,value
+         * 解析 每一行的数据: [device id1],[device id2]|tag1,value|tag2,value|....|tagN,value
          * @param line
          * @return
          */
-        private AuTagRedis parseLine(String line){
+        private List<AuTagRedis> parseLine(String line){
             if(StringUtil.isNullOrEmpty(line)){
                 return null;
             }
 
             String[] arr = line.split(Constant.REGEX_SYMBOL_VERTICAL);
             if(null != arr && arr.length > 1){
+                List<AuTagRedis> result = new ArrayList<>();
                 try {
-                    AuTagRedis auTagRedis = new AuTagRedis(arr[0]);
+                    String[] devideIds = arr[0].split(Constant.SYMBOL_COMMA);
+                    AuTagRedis auTagRedis = new AuTagRedis(devideIds[0]);
                     for (int i = 1; i < arr.length; ++i) {
                         if (null == arr[i]) {
                             continue;
@@ -317,7 +319,13 @@ public class TagFileProcessor {
                             auTagRedis.tagScore.add(tsi);
                         }
                     }
-                    return auTagRedis;
+                    result.add(auTagRedis);
+                    // 处理多个id的状态
+                    for(int i=1; i<devideIds.length; ++i){
+                        AuTagRedis n = new AuTagRedis(auTagRedis, devideIds[i]);
+                        result.add(n);
+                    }
+                    return result;
                 }
                 catch (Exception ex){
                     LOGGER.error(String.format("parse error (%s)", line), ex);
