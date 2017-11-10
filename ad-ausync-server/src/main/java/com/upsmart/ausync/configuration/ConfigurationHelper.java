@@ -25,6 +25,7 @@ public class ConfigurationHelper {
         SLAVE_AWS_TAG_PATH = getSlaveAWSTagPath();
         SLAVE_HISTORY_LOG = getSlaveHistoryLog();
         SLAVE_LOCAL_AUDIENCE_PATH = getSlaveLocalAudiencePath();
+        SLAVE_TAG_INDEX_PATH = getSlaveTagIndexPath();
         SLAVE_QUEUE_BLOCK_SIZE = getSlaveQueueBlockSize();
         SLAVE_QUEUE_THREAD_COUNT = getSlaveQueueThreadCount();
         SLAVE_ADDRESSES = getSlaveAddresses();
@@ -96,6 +97,13 @@ public class ConfigurationHelper {
     {
         String value = ConfigurationManager.getAppSetting("slaveLocalAudiencePath", "/home/upsmart/works/");
         LOGGER.info(String.format("SLAVE_LOCAL_AUDIENCE_PATH:[%s]", value));
+        return value;
+    }
+    public static final String SLAVE_TAG_INDEX_PATH;
+    private static String getSlaveTagIndexPath()
+    {
+        String value = ConfigurationManager.getAppSetting("slaveTagIndexPath", "/home/upsmart/works/tagindex");
+        LOGGER.info(String.format("SLAVE_TAG_INDEX_PATH:[%s]", value));
         return value;
     }
     public static final int SLAVE_QUEUE_BLOCK_SIZE;

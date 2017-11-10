@@ -1,12 +1,16 @@
 package com.upsmart.ausync.common;
 
+import com.upsmart.ausync.model.TransData;
 import com.upsmart.server.common.uniquenumber.UniqueNumberGenerator;
 
+import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.MappedByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by yuhang on 17-3-31.
@@ -58,5 +62,55 @@ public final class Constant {
                 return null;
             }
         });
+    }
+
+    /**
+     * 获得tag标签的索引下标
+     * @param path 索引文件路径,索引格式: id，序号
+     * @param map
+     * @return
+     */
+    public static int getTagIndex(String path, Map<String, Integer> map) throws IOException {
+        if(null == map){
+            return -1;
+        }
+        int ret = -1;
+
+        File file = new File(path);
+        InputStreamReader inputStreamReader = null;
+        BufferedReader bufferedReader = null;
+        try{
+            inputStreamReader = new InputStreamReader(new FileInputStream(file.getAbsolutePath()), "UTF-8");
+            bufferedReader = new BufferedReader(inputStreamReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                String[] arr = line.split(Constant.SYMBOL_COMMA);
+                if(null != arr && arr.length >=2) {
+                    String id = arr[0];
+                    Integer index = Integer.valueOf(arr[1]);
+                    map.put(id, index);
+                    if(index > ret){
+                        ret = index;
+                    }
+                }
+            }
+        }
+        finally {
+            if(null != bufferedReader){
+                bufferedReader.close();
+            }
+            if(null != inputStreamReader){
+                inputStreamReader.close();
+            }
+        }
+        return ret;
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        Map<String, Integer> map = new HashMap<>();
+        int count = Constant.getTagIndex("/home/upsmart/works/projects/adserver/ad-ausync/ad-ausync-server/properties/local/tagindex", map);
+
+        System.out.println(count);
     }
 }

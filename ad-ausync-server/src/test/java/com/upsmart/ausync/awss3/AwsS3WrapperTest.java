@@ -55,11 +55,11 @@ public class AwsS3WrapperTest {
     @Test
     public void testUpload(){
 
-        String filePath = "tag/11111/tag1.gz";
+        String filePath = "tag/22222/tag1.gz";
         File file = new File("/home/upsmart/works/tag1.gz");
         awsS3Wrapper.uploadFile(filePath, file);
 
-        filePath = "tag/11111/tag1.md5";
+        filePath = "tag/22222/tag1.md5";
         file = new File("/home/upsmart/works/tag1.md5");
         awsS3Wrapper.uploadFile(filePath, file);
     }
