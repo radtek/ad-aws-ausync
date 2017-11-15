@@ -62,10 +62,11 @@ public class AudienceFileProcessor {
         public void run() {
 
             while (enable) {
+                TransData.Task task = null;
                 try {
                     Thread.sleep(30000);
 
-                    TransData.Task task = Environment.getAudienceWorkQueue().getNext();
+                    task = Environment.getAudienceWorkQueue().getNext();
                     if (null != task) {
                         LOGGER.info(String.format("Begin to run AUDIENCE task..."));
 
@@ -100,7 +101,9 @@ public class AudienceFileProcessor {
                 } catch (Exception ex) {
                     LOGGER.error("", ex);
                 } finally {
-                    LOGGER.info(String.format("End to run task."));
+                    if(null != task) {
+                        LOGGER.info(String.format("End to run AUDIENCE task."));
+                    }
                 }
             }
 

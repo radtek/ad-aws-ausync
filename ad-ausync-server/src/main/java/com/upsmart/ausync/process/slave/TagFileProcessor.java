@@ -67,12 +67,13 @@ public class TagFileProcessor {
         @Override
         public void run() {
             while (enable) {
+                TransData.Task task = null;
                 try {
                     Thread.sleep(30000);
 
-                    TransData.Task task = Environment.getTagWorkQueue().getNext();
+                    task = Environment.getTagWorkQueue().getNext();
                     if (null != task) {
-                        LOGGER.info(String.format("Begin to run task..."));
+                        LOGGER.info(String.format("Begin to run TAG task..."));
 
                         boolean success = false;
                         try {
@@ -105,7 +106,9 @@ public class TagFileProcessor {
                 } catch (Exception ex) {
                     LOGGER.error("", ex);
                 } finally {
-                    LOGGER.info(String.format("End to run task."));
+                    if(null != task) {
+                        LOGGER.info(String.format("End to run TAG task."));
+                    }
                 }
             }
 
