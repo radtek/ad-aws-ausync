@@ -159,6 +159,12 @@ public class WorkQueue {
 
     private void writeFile(String dirName,String taskId, String taskStr) throws IOException {
         Path filePath = Paths.get(dirName, "audience-task-"+taskId);
+
+        File f = new File(filePath.toString());
+        if(f.isFile() && f.exists()) {
+            f.delete();
+        }
+
         OutputStream writer = null;
         try{
             writer = new BufferedOutputStream(

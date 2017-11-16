@@ -116,11 +116,8 @@ public abstract class RedisWrapper<T extends AuRedis> {
                     }
 
                     for(T t : list){
-                        count++;
-
                         Audience au = null;
                         if(!StringUtil.isNullOrEmpty(t.deviceId)){
-
                             byte[] key = t.deviceId.getBytes("UTF-8");
                             byte[] data = redisCluster.get(key);
                             if(null != data && data.length > 0) {
@@ -137,6 +134,11 @@ public abstract class RedisWrapper<T extends AuRedis> {
                                 byte[] setData = process(au, t);
                                 if(null != setData && setData.length > 0){
                                     redisCluster.set(key, setData); // redis.clients.jedis.exceptions.JedisDataException: OOM command not allowed when used memory > 'maxmemory'.
+                                    count++;
+
+                                    if( count % 10000 == 10 ){
+                                        LOGGER.debug(String.format("sample device id:%s, %s",t.deviceId, au.toString()));
+                                    }
                                 }
                             }
                         }

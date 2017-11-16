@@ -210,12 +210,12 @@ public class TagFileProcessor {
                         long bufferLength = byteBuffer.limit();
                         for(long i=0; i<bufferLength; i++){
                             if(isNewLine){
-                                buff = new byte[1024];
+                                buff = new byte[4096];
                                 index=0;
                                 isNewLine = false;
                             }
                             byte b = byteBuffer.get();
-                            if(b == '\n'){
+                            if(b == '\n' || b == '\r'){
                                 String line = new String(Arrays.copyOf(buff, index));
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
@@ -228,7 +228,9 @@ public class TagFileProcessor {
                                 isNewLine = true;
                             }
                             else{
-                                buff[index++] = b;
+                                if(index < 4096){
+                                    buff[index++] = b;
+                                }
                             }
 
                             if((m * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
@@ -245,12 +247,12 @@ public class TagFileProcessor {
                         long bufferLength = byteBuffer.limit();
                         for(long i=0; i<bufferLength; i++){
                             if(isNewLine){
-                                buff = new byte[1024];
+                                buff = new byte[4096];
                                 index=0;
                                 isNewLine = false;
                             }
                             byte b = byteBuffer.get();
-                            if(b == '\n'){
+                            if(b == '\n' || b == '\r'){
                                 String line = new String(Arrays.copyOf(buff, index));
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
@@ -263,7 +265,9 @@ public class TagFileProcessor {
                                 isNewLine = true;
                             }
                             else{
-                                buff[index++] = b;
+                                if(index < 4096){
+                                    buff[index++] = b;
+                                }
                             }
 
                             if((blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){

@@ -219,7 +219,7 @@ public class AudienceFileProcessor {
                                 isNewLine = false;
                             }
                             byte b = byteBuffer.get();
-                            if(b == '\n'){
+                            if(b == '\n' || b == '\r'){
                                 String line = new String(Arrays.copyOf(buff, index));
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
@@ -232,7 +232,9 @@ public class AudienceFileProcessor {
                                 isNewLine = true;
                             }
                             else{
-                                buff[index++] = b;
+                                if(index < 1024){
+                                    buff[index++] = b;
+                                }
                             }
 
                             if((m * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
@@ -254,7 +256,7 @@ public class AudienceFileProcessor {
                                 isNewLine = false;
                             }
                             byte b = byteBuffer.get();
-                            if(b == '\n'){
+                            if(b == '\n' || b == '\r'){
                                 String line = new String(Arrays.copyOf(buff, index));
                                 if(null == deviceIds){
                                     deviceIds = new ArrayList<>();
@@ -267,7 +269,9 @@ public class AudienceFileProcessor {
                                 isNewLine = true;
                             }
                             else{
-                                buff[index++] = b;
+                                if(index < 1024){
+                                    buff[index++] = b;
+                                }
                             }
 
                             if((blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
