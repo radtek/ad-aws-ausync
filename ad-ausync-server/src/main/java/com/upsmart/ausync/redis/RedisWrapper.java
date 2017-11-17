@@ -7,10 +7,11 @@ import com.upsmart.ausync.model.enums.ActionType;
 import com.upsmart.server.common.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Response;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -114,26 +115,56 @@ public abstract class RedisWrapper<T extends AuRedis> {
                         Thread.sleep(100);
                         continue;
                     }
-
+                    // key和T的mapping关系
+                    Map<byte[], T> tMap = new HashMap<>();
+                    // 选择key的slot
+                    Map<Integer, Set<byte[]>> keySlots = new HashMap<>();
                     for(T t : list){
-                        Audience au = null;
-                        if(!StringUtil.isNullOrEmpty(t.deviceId)){
-                            byte[] key = t.deviceId.getBytes("UTF-8");
-                            byte[] data = redisCluster.get(key);
+                        if(null != t.deviceIdKey && t.deviceIdKey.length > 0) {
+                            int slot = redisCluster.getJedisClusterCRC16(t.deviceIdKey);
+                            if(!keySlots.containsKey(slot)){
+                                keySlots.put(slot, new HashSet<byte[]>());
+                            }
+                            Set<byte[]> keys = keySlots.get(slot);
+                            keys.add(t.deviceIdKey);
+                            tMap.put(t.deviceIdKey, t);
+                        }
+                    }
+                    LOGGER.info(String.format("key count: %d, slot count:%d", tMap.size(), keySlots.size()));
+                    // 根据slot读写数据
+                    Iterator<Map.Entry<Integer, Set<byte[]>>> iter = keySlots.entrySet().iterator();
+                    while (iter.hasNext()) {
+                        Map.Entry<Integer, Set<byte[]>> entry = iter.next();
+                        int slot = entry.getKey();
+                        Set<byte[]> keys = entry.getValue();
+
+                        if(null == keys || keys.isEmpty()){
+                            continue;
+                        }
+                        Map<byte[], byte[]> allData = redisCluster.get(keys);
+                        if(null == allData || allData.isEmpty()){
+                            continue;
+                        }
+
+                        Iterator<Map.Entry<byte[], byte[]>> iterData = allData.entrySet().iterator();
+                        while (iterData.hasNext()) {
+                            Map.Entry<byte[], byte[]> entryData = iterData.next();
+                            byte[] key = entryData.getKey();
+                            byte[] data = entryData.getValue();
+                            Audience au = null;
                             if(null != data && data.length > 0) {
                                 au = AudienceSerializer.parseFrom(data);
                             }
-
                             if(null == au && ActionType.UPDATE.equals(actionType)){
                                 au = new Audience();
                                 au.version = 1;
                                 newCount++;
                             }
-
                             if(null != au) {
+                                T t = tMap.get(key);
                                 byte[] setData = process(au, t);
                                 if(null != setData && setData.length > 0){
-                                    redisCluster.set(key, setData); // redis.clients.jedis.exceptions.JedisDataException: OOM command not allowed when used memory > 'maxmemory'.
+                                    allData.put(key, setData);
                                     count++;
 
                                     if( count % 10000 == 10 ){
@@ -142,6 +173,7 @@ public abstract class RedisWrapper<T extends AuRedis> {
                                 }
                             }
                         }
+                        redisCluster.set(allData);// redis.clients.jedis.exceptions.JedisDataException: OOM command not allowed when used memory > 'maxmemory'.
                     }
                 }
                 catch (InterruptedException iex){
