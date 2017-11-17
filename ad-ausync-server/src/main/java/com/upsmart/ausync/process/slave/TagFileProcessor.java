@@ -216,14 +216,16 @@ public class TagFileProcessor {
                             }
                             byte b = byteBuffer.get();
                             if(b == '\n' || b == '\r'){
-                                String line = new String(Arrays.copyOf(buff, index));
-                                if(null == deviceIds){
-                                    deviceIds = new ArrayList<>();
-                                }
-                                deviceIds.addAll(parseLine(line));
-                                if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
-                                    audienceWrapper.offer(deviceIds);
-                                    deviceIds = null;
+                                if(index > 2) {
+                                    String line = new String(Arrays.copyOf(buff, index));
+                                    if (null == deviceIds) {
+                                        deviceIds = new ArrayList<>();
+                                    }
+                                    deviceIds.addAll(parseLine(line));
+                                    if (deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE) {
+                                        audienceWrapper.offer(deviceIds);
+                                        deviceIds = null;
+                                    }
                                 }
                                 isNewLine = true;
                             }
@@ -253,14 +255,16 @@ public class TagFileProcessor {
                             }
                             byte b = byteBuffer.get();
                             if(b == '\n' || b == '\r'){
-                                String line = new String(Arrays.copyOf(buff, index));
-                                if(null == deviceIds){
-                                    deviceIds = new ArrayList<>();
-                                }
-                                deviceIds.addAll(parseLine(line));
-                                if(deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE){
-                                    audienceWrapper.offer(deviceIds);
-                                    deviceIds = null;
+                                if(index > 2) {
+                                    String line = new String(Arrays.copyOf(buff, index));
+                                    if (null == deviceIds) {
+                                        deviceIds = new ArrayList<>();
+                                    }
+                                    deviceIds.addAll(parseLine(line));
+                                    if (deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE) {
+                                        audienceWrapper.offer(deviceIds);
+                                        deviceIds = null;
+                                    }
                                 }
                                 isNewLine = true;
                             }
