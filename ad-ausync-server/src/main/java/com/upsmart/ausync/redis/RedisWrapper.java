@@ -181,10 +181,10 @@ public abstract class RedisWrapper<T extends AuRedis> {
                     break;
                 }
                 catch (Exception ex){
-                    LOGGER.error(null, ex);
-                    result = false;
-                    resultStr = ex.getMessage();
-                    break;
+                    LOGGER.error("redis wrapper:error", ex);
+//                    result = false;
+//                    resultStr = ex.getMessage();
+//                    break;
                 }
                 finally {
 
