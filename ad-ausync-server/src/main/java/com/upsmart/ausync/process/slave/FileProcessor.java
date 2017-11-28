@@ -111,6 +111,18 @@ public abstract class FileProcessor implements Runnable {
         }
     }
 
+    protected boolean del(String filePath){
+        File f = new File(filePath);
+        if(f.isDirectory()){
+            for(File s : f.listFiles()){
+                del(s.getAbsolutePath());
+            }
+        }
+        boolean delStatus = f.delete();
+        LOGGER.info(String.format("delete (%s)", filePath, delStatus));
+        return delStatus;
+    }
+
     protected boolean VerifyMd5(Map<String, BrotherFiles> map) throws IOException, NoSuchAlgorithmException {
 
         boolean ret = true;

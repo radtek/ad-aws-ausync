@@ -173,7 +173,7 @@ public class AudienceFileProcessor {
                 // 读写redis
                 setRedis(localFilePath, task.audienceIds, at);
             }
-
+            del(String.format("%s/%s", getLocalFilePath(), task.taskId));
             return true;
         }
 

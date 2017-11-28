@@ -168,7 +168,7 @@ public class TagFileProcessor {
                 // 读写redis
                 setRedis(localFilePath, at);
             }
-
+            del(String.format("%s/%s", getLocalFilePath(), task.taskId));
             return true;
         }
 
