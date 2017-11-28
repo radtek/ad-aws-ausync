@@ -74,6 +74,7 @@ public class AudienceFileProcessor {
                         try {
                             if (process(task)) {
                                 task.taskCode = "200"; // 成功
+                                task.taskMsg = "success";
                                 Environment.getAudienceWorkQueue().updateStatus(task);
                                 success = true;
 

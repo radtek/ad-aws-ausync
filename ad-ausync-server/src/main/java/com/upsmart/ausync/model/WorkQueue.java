@@ -138,6 +138,11 @@ public class WorkQueue {
                                 if(null == statusMap){
                                     statusMap = new ConcurrentHashMap<>();
                                 }
+                                if(null != task.taskCode
+                                        && !task.taskCode.equals("200")){
+                                    task.taskCode = "207";
+                                    task.taskMsg = "application restarted before task finished";
+                                }
                                 statusMap.put(task.taskId, task);
                             }
                         }

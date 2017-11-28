@@ -79,6 +79,7 @@ public class TagFileProcessor {
                         try {
                             if (process(task)) {
                                 task.taskCode = "200"; // 成功
+                                task.taskMsg = "success";
                                 Environment.getTagWorkQueue().updateStatus(task);
                                 success = true;
 
