@@ -8,6 +8,8 @@ import com.upsmart.audienceproto.model.Audience;
 import com.upsmart.audienceproto.model.CampaignInfo;
 import com.upsmart.audienceproto.model.FrequencyInfo;
 import com.upsmart.audienceproto.serializer.AudienceSerializer;
+import com.upsmart.ausync.core.Environment;
+import com.upsmart.ausync.model.TransData;
 import com.upsmart.ausync.redis.RedisConnectionPool;
 import com.upsmart.ausync.redis.RedisInfo;
 import com.upsmart.server.common.utils.DateUtil;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +48,9 @@ public class AuTestProcessor implements HttpProcessor {
                 case "settag":
                     resp = setTag(request);
                     break;
+                case "patchtag":
+                    resp = setPatchTag(request); // http://localhost:13800/audience/test?work=patchtag&taskid=22222
+                    break;
                 default:
                     resp = show(request); // http://52.80.7.153:13800/audience/test?id=a76def8c-36d4-4850-ab1a-80745357291f
                     break;
@@ -65,6 +71,23 @@ public class AuTestProcessor implements HttpProcessor {
     public static void main(String[] args) throws InvalidProtocolBufferException, UnsupportedEncodingException, URISyntaxException {
         AuTestProcessor ap = new AuTestProcessor();
         ap.setFreq(null);
+    }
+
+    private String setPatchTag(HttpRequestWrapper request) throws IOException, URISyntaxException {
+        String taskid = request.getParam("taskid");
+        if(StringUtil.isNullOrEmpty(taskid)){
+            return "taskid is null or empty.";
+        }
+        TransData taskData = new TransData();
+        taskData.tasks = new ArrayList<>();
+        TransData.Task task = taskData.new Task();
+        task.action = "update";
+        task.taskId = taskid;
+        task.time = Long.valueOf(DateUtil.format(new Date(), "yyyyMMddHHmmss"));
+        taskData.tasks.add(task);
+        Environment.getTagWorkQueue().add(taskData);
+
+        return String.format("Tag task %s has been added!", taskid);
     }
 
     private String setTag(HttpRequestWrapper request) throws InvalidProtocolBufferException, UnsupportedEncodingException, URISyntaxException {

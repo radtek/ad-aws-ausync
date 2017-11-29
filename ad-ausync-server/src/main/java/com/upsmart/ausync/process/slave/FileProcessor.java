@@ -169,15 +169,31 @@ public abstract class FileProcessor implements Runnable {
                 // 文件块数量，可能还有结余
                 long blockNum = file.length() / Constant.MAX_MAPPING_BUFF_SIZE;
                 for(int i=0; i<blockNum; i++){
-                    MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, i*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);
-                    md.update(byteBuffer);
-                    listBuff.add(byteBuffer);
+                    MappedByteBuffer byteBuffer = null;
+                    try{
+                        byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, i*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);
+                        md.update(byteBuffer);
+//                      listBuff.add(byteBuffer);
+                    }
+                    finally {
+                        if(null != byteBuffer){
+                            Constant.releaseBuff(byteBuffer); // 释放内存
+                        }
+                    }
                 }
                 long remainByte = file.length() - (blockNum * Constant.MAX_MAPPING_BUFF_SIZE);
                 if(remainByte > 0){
-                    MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, (blockNum)*Constant.MAX_MAPPING_BUFF_SIZE, remainByte);
-                    md.update(byteBuffer);
-                    listBuff.add(byteBuffer);
+                    MappedByteBuffer byteBuffer = null;
+                    try{
+                        byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, (blockNum)*Constant.MAX_MAPPING_BUFF_SIZE, remainByte);
+                        md.update(byteBuffer);
+//                      listBuff.add(byteBuffer);
+                    }
+                    finally {
+                        if(null != byteBuffer){
+                            Constant.releaseBuff(byteBuffer); // 释放内存
+                        }
+                    }
                 }
 
                 return MD5.byteToString(md.digest());

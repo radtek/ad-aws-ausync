@@ -3,6 +3,10 @@ package com.upsmart.ausync.awss3;
 
 import com.upsmart.server.common.codec.Gzip;
 import com.upsmart.server.common.codec.MD5;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by yuhang on 17-11-7.
@@ -22,10 +26,10 @@ public class MD5CreateTest {
         System.out.println(md5Code);
     }
 
-    public static void t(int length, byte[]... keys){
-
-        for(byte[] b : keys){
-            System.out.println(new String(b));
-        }
+    @Test
+    public void test() throws IOException, NoSuchAlgorithmException {
+        String zfile = "/home/upsmart/works/people.gz";
+        String md5Code = MD5.fileMD5(zfile, 0);
+        System.out.println(md5Code);
     }
 }

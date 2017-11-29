@@ -155,9 +155,10 @@ public class TagFileProcessor {
                 Map.Entry<String, BrotherFiles> entry = iter.next();
 
                 BrotherFiles brotherFiles = entry.getValue();
-                if (!brotherFiles.verify) {
-                    continue;
-                }
+                // 由于HDFS直接传输S3无法MD5，所以去掉MD5验证
+//                if (!brotherFiles.verify) {
+//                    continue;
+//                }
                 if(null == brotherFiles.gzipFilePath){
                     continue;
                 }
@@ -205,79 +206,94 @@ public class TagFileProcessor {
                     // 文件块数量，可能还有结余
                     long blockNum = file.length() / Constant.MAX_MAPPING_BUFF_SIZE;
                     for(int m=0; m<blockNum; m++){
-                        MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, m*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);
-                        listBuff.add(byteBuffer);
-
-                        long bufferLength = byteBuffer.limit();
-                        for(long i=0; i<bufferLength; i++){
-                            if(isNewLine){
-                                buff = new byte[4096];
-                                index=0;
-                                isNewLine = false;
-                            }
-                            byte b = byteBuffer.get();
-                            if(b == '\n' || b == '\r'){
-                                if(index > 2) {
-                                    String line = new String(Arrays.copyOf(buff, index));
-                                    if (null == deviceIds) {
-                                        deviceIds = new ArrayList<>();
+                        MappedByteBuffer byteBuffer = null;
+                        try{
+                            byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, m*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);
+//                            listBuff.add(byteBuffer);
+                            long bufferLength = byteBuffer.limit();
+                            for(long i=0; i<bufferLength; i++){
+                                if(isNewLine){
+                                    buff = new byte[4096];
+                                    index=0;
+                                    isNewLine = false;
+                                }
+                                byte b = byteBuffer.get();
+                                if(b == '\n' || b == '\r'){
+                                    if(index > 2) {
+                                        String line = new String(Arrays.copyOf(buff, index));
+                                        if (null == deviceIds) {
+                                            deviceIds = new ArrayList<>();
+                                        }
+                                        deviceIds.addAll(parseLine(line));
+                                        if (deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE) {
+                                            audienceWrapper.offer(deviceIds);
+                                            deviceIds = null;
+                                        }
                                     }
-                                    deviceIds.addAll(parseLine(line));
-                                    if (deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE) {
-                                        audienceWrapper.offer(deviceIds);
-                                        deviceIds = null;
+                                    isNewLine = true;
+                                }
+                                else{
+                                    if(index < 4096){
+                                        buff[index++] = b;
                                     }
                                 }
-                                isNewLine = true;
-                            }
-                            else{
-                                if(index < 4096){
-                                    buff[index++] = b;
+
+                                if((m * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
+                                    LOGGER.info(String.format("process %d: %d%%",m, (m * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
+                                    proNum++;
                                 }
                             }
-
-                            if((m * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
-                                LOGGER.info(String.format("process %d: %d%%",m, (m * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
-                                proNum++;
+                        }
+                        finally {
+                            if(null != byteBuffer){
+                                Constant.releaseBuff(byteBuffer); // 释放内存
                             }
                         }
                     }
                     long remainByte = file.length() - (blockNum * Constant.MAX_MAPPING_BUFF_SIZE);
                     if(remainByte > 0){
-                        MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, (blockNum)*Constant.MAX_MAPPING_BUFF_SIZE, remainByte);
-                        listBuff.add(byteBuffer);
+                        MappedByteBuffer byteBuffer=null;
+                        try{
+                            byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, (blockNum)*Constant.MAX_MAPPING_BUFF_SIZE, remainByte);
+//                            listBuff.add(byteBuffer);
 
-                        long bufferLength = byteBuffer.limit();
-                        for(long i=0; i<bufferLength; i++){
-                            if(isNewLine){
-                                buff = new byte[4096];
-                                index=0;
-                                isNewLine = false;
-                            }
-                            byte b = byteBuffer.get();
-                            if(b == '\n' || b == '\r'){
-                                if(index > 2) {
-                                    String line = new String(Arrays.copyOf(buff, index));
-                                    if (null == deviceIds) {
-                                        deviceIds = new ArrayList<>();
+                            long bufferLength = byteBuffer.limit();
+                            for(long i=0; i<bufferLength; i++){
+                                if(isNewLine){
+                                    buff = new byte[4096];
+                                    index=0;
+                                    isNewLine = false;
+                                }
+                                byte b = byteBuffer.get();
+                                if(b == '\n' || b == '\r'){
+                                    if(index > 2) {
+                                        String line = new String(Arrays.copyOf(buff, index));
+                                        if (null == deviceIds) {
+                                            deviceIds = new ArrayList<>();
+                                        }
+                                        deviceIds.addAll(parseLine(line));
+                                        if (deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE) {
+                                            audienceWrapper.offer(deviceIds);
+                                            deviceIds = null;
+                                        }
                                     }
-                                    deviceIds.addAll(parseLine(line));
-                                    if (deviceIds.size() >= ConfigurationHelper.SLAVE_QUEUE_BLOCK_SIZE) {
-                                        audienceWrapper.offer(deviceIds);
-                                        deviceIds = null;
+                                    isNewLine = true;
+                                }
+                                else{
+                                    if(index < 4096){
+                                        buff[index++] = b;
                                     }
                                 }
-                                isNewLine = true;
-                            }
-                            else{
-                                if(index < 4096){
-                                    buff[index++] = b;
+
+                                if((blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
+                                    LOGGER.info(String.format("process r: %d%%", (blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
+                                    proNum++;
                                 }
                             }
-
-                            if((blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) >= (pro * proNum)){
-                                LOGGER.info(String.format("process r: %d%%", (blockNum * Constant.MAX_MAPPING_BUFF_SIZE + i) * 100/fileLength));
-                                proNum++;
+                        }
+                        finally {
+                            if(null != byteBuffer){
+                                Constant.releaseBuff(byteBuffer); // 释放内存
                             }
                         }
                     }
