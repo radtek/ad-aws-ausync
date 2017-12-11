@@ -208,7 +208,7 @@ public class AudienceFileProcessor {
 
                     // 文件块数量，可能还有结余
                     long blockNum = file.length() / Constant.MAX_MAPPING_BUFF_SIZE;
-                    for(int m=0; m<blockNum; m++){
+                    for(long m=0; m<blockNum; m++){
                         MappedByteBuffer byteBuffer = null;
                         try{
                             byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, m*Constant.MAX_MAPPING_BUFF_SIZE, Constant.MAX_MAPPING_BUFF_SIZE);

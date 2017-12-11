@@ -34,7 +34,7 @@ public final class Constant {
 
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-    public final static int MAX_MAPPING_BUFF_SIZE = Integer.MAX_VALUE / 100;
+    public final static long MAX_MAPPING_BUFF_SIZE = Integer.MAX_VALUE / 100;
 
     public static <K, V> int getRandomIndex(Map<K, V> map){
 
