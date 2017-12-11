@@ -44,6 +44,9 @@ public class AwsS3Wrapper {
                     AwsS3FileInfo awsS3FileInfo = new AwsS3FileInfo();
                     awsS3FileInfo.path = objectSummary.getKey();
                     awsS3FileInfo.size = objectSummary.getSize();
+                    if(awsS3FileInfo.size <= 0){
+                        continue; // 有可能是空文件
+                    }
                     awsS3FileInfo.lastModified = objectSummary.getLastModified();
                     files.add(awsS3FileInfo);
                 }
@@ -73,6 +76,9 @@ public class AwsS3Wrapper {
                     AwsS3FileInfo awsS3FileInfo = new AwsS3FileInfo();
                     awsS3FileInfo.path = objectSummary.getKey();
                     awsS3FileInfo.size = objectSummary.getSize();
+                    if(awsS3FileInfo.size <= 0){
+                        continue; // 有可能是空文件
+                    }
                     awsS3FileInfo.lastModified = objectSummary.getLastModified();
                     files.add(awsS3FileInfo);
                 }

@@ -34,7 +34,7 @@ public class AwsS3WrapperTest {
 
     @Test
     public void test(){
-        List<AwsS3FileInfo> listFiles = awsS3Wrapper.getAllFilesPath();
+        List<AwsS3FileInfo> listFiles = awsS3Wrapper.getAllFilesPath("tag");
 //        List<AwsS3FileInfo> listFiles = awsS3Wrapper.getAllFilesPath("precise/data/15166");
 //        List<AwsS3FileInfo> listFiles = awsS3Wrapper.getAllFilesPath("audience-analytics-webapi");
         for(AwsS3FileInfo file : listFiles){

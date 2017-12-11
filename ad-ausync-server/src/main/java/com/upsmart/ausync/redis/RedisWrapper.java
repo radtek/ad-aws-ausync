@@ -87,6 +87,9 @@ public abstract class RedisWrapper<T extends AuRedis> {
         if(null != countDownLatch) {
             countDownLatch.await();
         }
+        close();
+    }
+    public void close() throws IOException {
         if(null != redisCluster) {
             redisCluster.close();
         }
